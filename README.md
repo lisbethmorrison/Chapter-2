@@ -1,3 +1,3 @@
 # Chapter-2
 
-R script Chapter 2 analysis
+R script for Chapter 2 analysis
