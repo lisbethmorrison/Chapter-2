@@ -100,6 +100,7 @@ write.csv(bbs_final, file = "../Data/BBS sites/bbs_final_1.csv", row.names=FALSE
 #bbs_final <- read.csv("..//Data/BBS sites/bbs_final_1.csv", header=TRUE)
 
 ## now can remove NA values (as consecutive years are grouped, so NAs aren't needed)
+bbs_final[bbs_final=="NA"] <- NA ## change character NAs to NA
 bbs_final <- na.omit(bbs_final)
 
 ## group by Cum_years column, and use ifelse to put "yes" where length >=8, and "no" if not
