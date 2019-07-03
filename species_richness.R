@@ -10,54 +10,61 @@ options(scipen=999)
 
 ## packages
 library(reshape2)
-library(plyr)
-library(dplyr)
 library(data.table)
+library(dplyr)
 
 ##############################################
 ## calculate species stability at each site ##
 ##############################################
 
 ## read in data
-bbs <- read.csv("../../Chapter 1/Data/Bird_sync_data/bbs_woodland_birds.csv", header=TRUE)
+bbs <- read.csv("../Data/BBS_2004_2018.csv", header=TRUE)
 bbs <- unique(bbs) # drop duplicate rows
 
-bbs$site_code <- as.factor(bbs$site_code)
-bbs$species_code <- as.factor(bbs$species_code)
+bbs$GRIDREF <- as.factor(bbs$GRIDREF)
+bbs$CBC_CODE <- as.factor(bbs$CBC_CODE)
+
+length(unique(bbs$ENGLISH_NAME)) # 194
+length(unique(bbs$GRIDREF)) # 200
+length(unique(bbs$YEAR)) # 15
 
 ## sort site code and year in ascending order
-bbs <- bbs %>% arrange(site_code, ENGLISH_NAME, YEAR)
+bbs <- bbs %>% arrange(GRIDREF, ENGLISH_NAME, YEAR)
 
 ## Filter 1: only include sites with at least 8 years of continuous data
-## i.e. 1994-2001 
+## 2004-2018 
 
 bbs <- bbs %>%
-  group_by(species_code, site_code) %>%
+  group_by(CBC_CODE, GRIDREF) %>%
   mutate(Diff = YEAR - lag(YEAR))
 
 ## NAs = first value so need to change this to 1
 bbs$Diff[is.na(bbs$Diff)] <- 1
 
+str(bbs)
+
 #################################################################
 ######## code which puts consecutive years into groups ##########
 #################################################################
 
+bbs$YEAR <- as.factor(bbs$YEAR)
+bbs <- droplevels(bbs)
 start_time <- Sys.time()
 i <- 1
-site.list <- unique(bbs$site_code)
+site.list <- unique(bbs$GRIDREF)
 bbs_final <- NULL
 
 for (j in site.list){
   print(j)
-  bbs_1 <- bbs[bbs$site_code==j,] ## bbs_1 is the site dataframe
+  bbs_1 <- bbs[bbs$GRIDREF==j,] ## bbs_1 is the site dataframe
   
-  spp.list <- unique(bbs_1$species_code) ## get unique species from site of interest
+  spp.list <- unique(bbs_1$CBC_CODE) ## get unique species from site of interest
   
   for (k in spp.list){
     
-    bbs_2 <- bbs_1[bbs_1$species_code==k,] ## bbs_2 is site and species combo of interest
-    
-      ## create findstop function which replaces values which are not 1 with NAs, and after NA's, add one to value
+    bbs_2 <- bbs_1[bbs_1$CBC_CODE==k,] ## bbs_2 is site and species combo of interest
+
+          ## create findstop function which replaces values which are not 1 with NAs, and after NA's, add one to value
       ## this is so each cumulative run of 1's in Diff column are separated into blocks of different numbers
       findstop <-function(dt) {
         out <- NULL
@@ -80,24 +87,25 @@ for (j in site.list){
       bbs_2<-mutate(bbs_2, fixeddiff = ifelse(cumstop != "NA",cumstop ,ifelse(YEAR == (takeone - 1), takecumstop,"NA")  )    )
     ## this part ensures that when there is an NA value which is actually consecutive, it will change it to consecutive
  
-    bbs_temp <- data.frame(bbs_2$species_code, bbs_2$site_code, bbs_2$YEAR, bbs_2$ENGLISH_NAME, bbs_2$TOT, bbs_2$Diff, bbs_2$fixeddiff)
+    bbs_temp <- data.frame(bbs_2$CBC_CODE, bbs_2$GRIDREF, bbs_2$YEAR, bbs_2$ENGLISH_NAME, bbs_2$TOT, bbs_2$Diff, bbs_2$fixeddiff)
+    bbs_temp$bbs_2.fixeddiff <- as.character(bbs_temp$bbs_2.fixeddiff)
     bbs_final <- rbind(bbs_final, bbs_temp)
     
      }
 } ## close loops
 
 end_time <- Sys.time()
-end_time - start_time ## 1.8 hours
+end_time - start_time ## 1.2 mins
 
 ## change colnames
-colnames(bbs_final) <- c("species_code", "site_code", "YEAR", "ENGLISH_NAME", "TOT", "Diff", "Cum_years")
+colnames(bbs_final) <- c("CBC_CODE", "GRIDREF", "YEAR", "ENGLISH_NAME", "TOT", "Diff", "Cum_years")
 ## order dataframe
-bbs_final <- bbs_final %>% arrange(site_code, ENGLISH_NAME, YEAR)
+bbs_final <- bbs_final %>% arrange(GRIDREF, ENGLISH_NAME, YEAR)
 
 ## save dataframe
 write.csv(bbs_final, file = "../Data/BBS sites/bbs_final_1.csv", row.names=FALSE)
 ## read data
-#bbs_final <- read.csv("..//Data/BBS sites/bbs_final_1.csv", header=TRUE)
+bbs_final <- read.csv("..//Data/BBS sites/bbs_final_1.csv", header=TRUE)
 
 ## now can remove NA values (as consecutive years are grouped, so NAs aren't needed)
 bbs_final[bbs_final=="NA"] <- NA ## change character NAs to NA
@@ -111,48 +119,62 @@ bbs_final <- bbs_final %>%
 
 ## new dataframe with only "yes" values
 bbs_final2 <- bbs_final[bbs_final$cons_years=="yes",]
-length(unique(bbs_final2$site_code)) ## 2502 sites
-length(unique(bbs_final2$species_code)) ## still 31 species  
+length(unique(bbs_final2$GRIDREF)) ## 200 sites
+length(unique(bbs_final2$CBC_CODE)) ## 100 species which have at least 8 years of data for some sites
+
+bbs_final2_summ <- bbs_final2 %>% 
+  group_by(YEAR,ENGLISH_NAME) %>% 
+  summarise(no_sites = n()) # number of sites for each species varies from 1 to 194
+
+bbs_final2_summ2 <- bbs_final2 %>% 
+  group_by(GRIDREF,ENGLISH_NAME) %>% 
+  summarise(no_years = n()) # no years varies from 8 to 15
 
 ## Filter 2: only include sites with a mean count of at least 9 individuals per year
 ## average TOT per site for each year
 df <- bbs_final2 %>%
-  group_by(site_code, YEAR) %>%
+  group_by(GRIDREF, YEAR, ENGLISH_NAME) %>%
   summarise(Mean = mean(TOT))
-## now remove sites which have any year with less than 9 individuals
-df <- df %>%
-  group_by(site_code) %>%
-  filter(!any(Mean<9))
-length(unique(df$site_code)) ## 116 sites...
-## possibly too harsh a filter??
+## now remove sites which have any year with less than 3 individuals
+df2 <- df %>%
+  group_by(GRIDREF, ENGLISH_NAME) %>%
+  filter(!any(Mean<3))
+length(unique(df2$GRIDREF)) ## 200 sites 
+length(unique(df2$ENGLISH_NAME)) ## 61 species
+length(unique(df2$YEAR)) ## still 15 years
+## this is the data where, for each species, sites have at least 8 years of continuous data 
+## and sites with a mean count of at least 3 individuals per year
 
 ## Filter 3: only include species with data from at least 10 sites
-df2 <- bbs_final2[,c(2,1)]
-df2 <- unique(df2)
+df3 <- df2[,c(1,3)]
+df3 <- unique(df3)
 ## calculate number of sites for each species
-df2 <- df2 %>%
-  group_by(species_code) %>%
+df3 <- df3 %>%
+  group_by(ENGLISH_NAME) %>%
   summarise(count = n())
 ## now remove species which have less than 10 sites
-df2 <- df2[df2$count>=10,]
-## removes 5 species (24 total)
+df3 <- df3[df3$count>=10,]
+## only 28 species left 
 
-## df = sites which have at least 9 individuals per year
-## df2 = species which have data from at least 10 sites
+## combine df2 with df3 
+df2 <- merge(df2, df3, by="ENGLISH_NAME", all=FALSE)
+length(unique(df2$ENGLISH_NAME)) # 28 species
 
-## combine bbs_final2 with df2 == just removes 5 species from main dataframe
-## leave df for now (takes out too many sites, maybe only suitable for UKBMS data?)
-
-bbs_final2 <- merge(bbs_final2, df2, by="species_code", all=FALSE)
-length(unique(bbs_final2$species_code)) ## 26 species
+bbs_final2 <- merge(bbs_final2, df2, by=c("ENGLISH_NAME", "GRIDREF", "YEAR"), all=FALSE)
+length(unique(bbs_final2$ENGLISH_NAME)) ## 28 species
+length(unique(bbs_final2$GRIDREF)) ## 200 sites
+length(unique(bbs_final2$YEAR)) ## 15 years
 
 ## save file 
 write.csv(bbs_final2, file = "../Data/BBS sites/bbs_final_2.csv", row.names=FALSE)
-#bbs_final2 <- read.csv("../Data/BBS sites/bbs_final_2.csv", header=TRUE)
 
 ###########################################################################################################
 ###########################################################################################################
 ###########################################################################################################
+
+rm(list=ls()) # clear R
+
+bbs_final2 <- read.csv("../Data/BBS sites/bbs_final_2.csv", header=TRUE)
 
 ## Filters done - now calculate stability of each species, at each site over time
 ## stability = (1/CV)
@@ -160,21 +182,21 @@ write.csv(bbs_final2, file = "../Data/BBS sites/bbs_final_2.csv", row.names=FALS
 
 ## first calculate mean and SD
 bbs_stability <- NULL
-site.list <- unique(bbs_final2$site_code)
+site.list <- unique(bbs_final2$GRIDREF)
 for (j in site.list){
-  bbs_1 <- bbs_final2[bbs_final2$site_code==j,] ## bbs_1 is the site dataframe
+  bbs_1 <- bbs_final2[bbs_final2$GRIDREF==j,] ## bbs_1 is the site dataframe
   
-  spp.list <- unique(bbs_1$species_code) ## get unique species from site of interest
+  spp.list <- unique(bbs_1$ENGLISH_NAME) ## get unique species from site of interest
   
   for (k in spp.list){
     
-    bbs_2 <- bbs_1[bbs_1$species_code==k,] ## bbs_2 is site and species combo of interest
+    bbs_2 <- bbs_1[bbs_1$ENGLISH_NAME==k,] ## bbs_2 is site and species combo of interest
     
     mean <- mean(bbs_2$TOT)
     sd <- sd(bbs_2$TOT)
-    species_code <- k
-    site_code <- j
-    results.temp<-data.frame(species_code,site_code,mean,sd)
+    ENGLISH_NAME <- k
+    GRIDREF <- j
+    results.temp<-data.frame(ENGLISH_NAME,GRIDREF,mean,sd)
     bbs_stability <- rbind(results.temp, bbs_stability)
   }
 }
@@ -182,11 +204,14 @@ for (j in site.list){
 ## calculate CV (mean/SD) and stability (1/CV)
 bbs_stability$CV <- bbs_stability$sd/bbs_stability$mean
 bbs_stability$stability <- 1/bbs_stability$CV
-## 17 rows which have no varaibility (mean = 1, sd=0) so cannot calculate CV or stability
+## some rows have NA values (where species are only recorded once at a site)
 ## remove these rows
-bbs_stability <- bbs_stability[!bbs_stability$CV==0,] ## removes site 1677 (2501 total sites now)
+bbs_stability <- na.omit(bbs_stability)
+length(unique(bbs_stability$ENGLISH_NAME)) # still 28 species
+length(unique(bbs_stability$GRIDREF)) # still 200 sites
+
 ## now take the average stability for each site (comparable to species richness)
-av_stability <- aggregate(bbs_stability[, 6], list(bbs_stability$site_code), mean)
+av_stability <- aggregate(bbs_stability[, 6], list(bbs_stability$GRIDREF), mean)
 ## change colnames
 colnames(av_stability) <- c("site_code", "stability")
 
@@ -201,22 +226,22 @@ write.csv(av_stability, file = "../Data/BBS sites/bbs_average_stability.csv", ro
 ## remove zero counts
 bbs_final2 <- bbs_final2[!bbs_final2$TOT=="0",]
 str(bbs_final2)
-bbs_final2$site_code <- as.factor(bbs_final2$site_code)
-bbs_final2$species_code <- as.factor(bbs_final2$species_code)
+bbs_final2$GRIDREF <- as.factor(bbs_final2$GRIDREF)
+bbs_final2$CBC_CODE <- as.factor(bbs_final2$CBC_CODE)
 bbs_final2$YEAR <- as.factor(bbs_final2$YEAR)
 
 ## add column which assigns each species a number (1)
 ## therefore sum of that column == species richness
 bbs_final2$sppnumber <- 1
 
-richness <- tapply(bbs_final2$sppnumber, bbs_final2[, c("site_code", "YEAR")], sum)
+richness <- tapply(bbs_final2$sppnumber, bbs_final2[, c("GRIDREF", "YEAR")], sum)
 richness <- na.omit(melt(richness)) ## melt into 3 columns (site, year, richness)
 ## rename columns
-colnames(richness) <- c("site_code", "year", "spp_richness")
+colnames(richness) <- c("GRIDREF", "YEAR", "spp_richness")
 
 ## take the average richness over time
 ## gives average richness at each site - comparable to stability
-av_richness <- aggregate(richness[, 3], list(richness$site_code), mean)
+av_richness <- aggregate(richness[, 3], list(richness$GRIDREF), mean)
 ## change colnames
 colnames(av_richness) <- c("site_code", "spp_richness")
 
