@@ -82,27 +82,3 @@ BBS_traits4 <- merge(BBS_traits3, STI_data, by.x="ENGLISH_NAME", by.y="sp", all.
 
 ## save file again
 write.csv(BBS_traits4, file="../Data/BBS_species_trait_data.csv", row.names=FALSE)
-
-## read in trait data 
-BBS_traits <- read.csv("../Data/BBS_species_trait_data.csv", header=TRUE)
-
-## select only traits interested in (all biometric traits for now)
-BBS_traits2 <- BBS_traits[, c(15,16,17,18,19,20,21,28,29,30)]
-head(BBS_traits2)
-str(BBS_traits2)
-BBS_traits2 <- na.omit(BBS_traits2)
-
-## correlation matrix
-library(Hmisc)
-library(psych)
-library(devtools)
-res <- rcorr(as.matrix(BBS_traits2))
-res
-res2 <- corr.test(BBS_traits2)
-res2
-
-z <- prcomp(BBS_traits2[ ,3:5]) ## bill length, width and depth
-summary(z) # PC1 accounts for 95% of the total variation and PC2 4% of the total variation
-
-z2 <- prcomp(BBS_traits2[ ,8:10]) ## kipps distance, tail length and wing length
-summary(z2) ## PC1 accounts for 93% of the total variation and PC2 6% of the total variation
