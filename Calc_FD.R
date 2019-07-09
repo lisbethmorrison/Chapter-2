@@ -10,6 +10,8 @@ options(scipen=999)
 
 library(factoextra)
 library(vegan)
+library(reshape2)
+library(tidyverse)
 
 ## read in trait data 
 BBS_traits <- read.csv("../Data/BBS_species_trait_data.csv", header=TRUE)
@@ -73,27 +75,48 @@ effect_traits <- effect_traits[-c(9:11)]
 
 ## need to merge in site data, so each site has a separate community of species 
 BBS_data <- read.csv("../Data/BBS_2004_2018.csv", header=TRUE)
-## remove year and no_years
-## take the species richness across all years for each site
-## also remove TOT (don't need abundance to calculate FD dendrogram)
-BBS_data <- BBS_data[-c(4:6)]
-BBS_data <- unique(BBS_data)
 
-BBS_final <- merge(BBS_data, effect_traits, by="ENGLISH_NAME", all=FALSE)
-length(unique(BBS_final$GRIDREF)) # 200 sites
-length(unique(BBS_final$ENGLISH_NAME)) # 83 species which have all trait and abundance data
+## merge effect traits with BBS species data to match number of species
+spp_list2 <- data.frame(ENGLISH_NAME = unique(effect_traits$ENGLISH_NAME)) ## 124 species
+BBS_data <- merge(spp_list2, BBS_data, by="ENGLISH_NAME")
+BBS_data <- droplevels(BBS_data)
+length(unique(BBS_data$ENGLISH_NAME)) ## 83 species
 
-## now calculate FD dendrogram for each site using PCA1 and PCA2
-traits <- BBS_final[BBS_final$GRIDREF=="TQ7877",]
-traits <- traits[c(1,9,10)] ## english name, PCA1 and PCA2
+## make this into a dataframe with species as columns and sites as rows filled with abundance at each site (including zeros if species isn't present)
+BBS_data2 <- BBS_data %>%
+  group_by(GRIDREF, ENGLISH_NAME) %>% 
+  summarise(n=n()) %>% 
+  spread(ENGLISH_NAME, n, drop = FALSE, fill = 0) 
+## save first column as a site_match dataframe
+site_match <- BBS_data2[,(1)]
+## add in numbers 1:200
+site_match$site <- 1:200
+## remove first column (which is actual gridrefs) and leave sites as numbers 1-200
+BBS_data2 <- BBS_data2[,-(1)]
 
-my.dist = as.matrix(dist(traits, method = "euclidean"))  ## distance matrix
-rownames(my.dist) <- traits$ENGLISH_NAME
-colnames(my.dist) <- traits$ENGLISH_NAME
-my.dendro = hclust(as.dist(my.dist), method = "average") ## heirarchial clustering to divide clusters among species
-plot(my.dendro)
-FD <- treedive(traits, my.dendro, match.force=TRUE)
+## merge BBS_data with effect traits to make same number of species
+spp_list <- data.frame(ENGLISH_NAME = unique(BBS_data$ENGLISH_NAME)) ## 83 species
+effect_traits <- merge(spp_list, effect_traits, by="ENGLISH_NAME") ## 83 species
+effect_traits <- effect_traits[c(1,7,8)] ## english name, PCA1 and PCA2
 
+## code to confirm that there are 83 species with effect trait and abundance data  
+# matchingNames <- spp_list$ENGLISH_NAME %in% spp_list2$ENGLISH_NAME
+# spp_list$result <- matchingNames
+
+## change row numbers to species names
+rownames(effect_traits) <- effect_traits[, 1]
+effect_traits <- effect_traits[, -1]
+
+# find distance matrix 
+d <- dist(as.matrix(effect_traits))
+# apply hirarchical clustering
+cluster <- hclust(d, method="average")
+# plot the dendrogram
+plot(cluster)
+# calculate total branch length for each site
+FD <- treedive(BBS_data2, cluster, match.force=TRUE) ## works!!!
+# dataframe with FD values and gridrefs (200 in total) for 83 species
+functional_div <- data.frame(FD_effect=FD, gridref=site_match$GRIDREF)
 
 
 ######################################################################
@@ -105,7 +128,7 @@ response_traits <- BBS_traits[, c(1,22,26,31:33)]
 response_traits[c(2:6)] <- lapply(response_traits[c(2:6)], function(response_traits) c(scale(response_traits, center = TRUE, scale = TRUE))) ## centre and scale trait data
 head(response_traits)
 str(response_traits)
-response_traits <- na.omit(response_traits) ## 122 species without thermal maximum, clutch size and HHI
+response_traits <- na.omit(response_traits) ## 122 species without thermal maximum, clutch size and HSI
 ## correlation matrix 
 response_corr <- cor(response_traits[c(2:6)])
 response_corr
@@ -116,6 +139,60 @@ summary(response) ## PC1 accounts for 65% of the total variation and PC2 33% of 
 
 response_eigen <- get_eigenvalue(response)
 response_eigen ## PCA1 eigenvalue = 1.39, PCA2 eigenvalue = 0.84
+
+x <- predict(response) ## save scores from PCA
+x <- as.data.frame(x, stringsAsFactors = FALSE) ## convert to dataframe
+## correlation between PCA1 and PCA2
+x_corr <- cor(x[c(1,2)]) ## not correlated (r = -0.0000000000000002)
+## use these as two independent axes of response traits
+
+response_traits <- cbind(response_traits, x) ## use PCA1 and PCA2 as two traits to calculate effect trait diversity
+response_traits <- response_traits[-c(9:11)]
+
+## need to merge in site data, so each site has a separate community of species 
+BBS_data <- read.csv("../Data/BBS_2004_2018.csv", header=TRUE)
+
+## merge effect traits with BBS species data to match number of species
+spp_list2 <- data.frame(ENGLISH_NAME = unique(response_traits$ENGLISH_NAME)) ## 122 species
+BBS_data <- merge(spp_list2, BBS_data, by="ENGLISH_NAME")
+BBS_data <- droplevels(BBS_data)
+length(unique(BBS_data$ENGLISH_NAME)) ## 93 species with trait and abundance data
+
+## make this into a dataframe with species as columns and sites as rows filled with abundance at each site (including zeros if species isn't present)
+BBS_data2 <- BBS_data %>%
+  group_by(GRIDREF, ENGLISH_NAME) %>% 
+  summarise(n=n()) %>% 
+  spread(ENGLISH_NAME, n, drop = FALSE, fill = 0) 
+## save first column as a site_match dataframe
+site_match <- BBS_data2[,(1)]
+## add in numbers 1:200
+site_match$site <- 1:200
+## remove first column (which is actual gridrefs) and leave sites as numbers 1-200
+BBS_data2 <- BBS_data2[,-(1)]
+
+## merge BBS_data with effect traits to make same number of species
+spp_list <- data.frame(ENGLISH_NAME = unique(BBS_data$ENGLISH_NAME)) ## 93 species
+response_traits <- merge(spp_list, response_traits, by="ENGLISH_NAME") ## 93 species
+response_traits <- response_traits[c(1,7,8)] ## english name, PCA1 and PCA2
+
+## code to confirm that there are 93 species with response trait and abundance data  
+# matchingNames <- spp_list$ENGLISH_NAME %in% spp_list2$ENGLISH_NAME
+# spp_list$result <- matchingNames
+
+## change row numbers to species names
+rownames(response_traits) <- response_traits[, 1]
+response_traits <- response_traits[, -1]
+
+# find distance matrix 
+d <- dist(as.matrix(response_traits))
+# apply hirarchical clustering
+cluster <- hclust(d, method="average")
+# plot the dendrogram
+plot(cluster)
+# calculate total branch length for each site
+FD <- treedive(BBS_data2, cluster, match.force=TRUE) ## works!!!
+# dataframe with FD values and gridrefs (200 in total) for 93 species
+functional_div2 <- data.frame(FD_response=FD, gridref=site_match$GRIDREF)
 
 ##################################################################
 ####################### BOTH TRAITS ##############################
@@ -138,3 +215,16 @@ summary(both) ## PC1 accounts for 94% of the total variation
 
 both_eigen <- get_eigenvalue(both)
 both_eigen ## PCA1 eigenvalue = 2.6, PCA2 eigenvalue = 0.364
+
+
+
+
+
+############## find species which have all effect and response traits plus abundance data
+spp_effect <- data.frame(ENGLISH_NAME = rownames(effect_traits)) ## 83
+spp_response <- data.frame(ENGLISH_NAME=rownames(response_traits)) ## 93
+BBS_data <- read.csv("../Data/BBS_2004_2018.csv", header=TRUE)
+spp_abund <- data.frame(ENGLISH_NAME=unique(BBS_data$ENGLISH_NAME)) ## 124
+
+total_spp <- merge(spp_effect, spp_response, by="ENGLISH_NAME")
+total_spp <- merge(total_spp, spp_abund, by="ENGLISH_NAME") ## 67 SPECIES 
