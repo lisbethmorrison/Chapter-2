@@ -108,11 +108,11 @@ all_traits <- merge(effect_both_traits, response_both_traits, by=c("ENGLISH_NAME
 ## 28 seed-eating species which have ALL traits (and abundance data)
 
 ## save these files
-write.csv(effect_traits, file="../Data/Analysis_data/Seed dispersal/seed_effect_traits.csv", row.names=FALSE)
-write.csv(response_traits, file="../Data/Analysis_data/Seed dispersal/seed_response_traits.csv", row.names=FALSE)
-write.csv(effect_both_traits, file="../Data/Analysis_data/Seed dispersal/seed_effect_both_traits.csv", row.names=FALSE)
-write.csv(response_both_traits, file="../Data/Analysis_data/Seed dispersal/seed_response_both_traits.csv", row.names=FALSE)
-write.csv(all_traits, file="../Data/Analysis_data/Seed dispersal/seed_all_traits.csv", row.names=FALSE)
+write.csv(effect_traits, file="../Data/Trait data/Seed dispersal/seed_effect_traits.csv", row.names=FALSE)
+write.csv(response_traits, file="../Data/Trait data/Seed dispersal/seed_response_traits.csv", row.names=FALSE)
+write.csv(effect_both_traits, file="../Data/Trait data/Seed dispersal/seed_effect_both_traits.csv", row.names=FALSE)
+write.csv(response_both_traits, file="../Data/Trait data/Seed dispersal/seed_response_both_traits.csv", row.names=FALSE)
+write.csv(all_traits, file="../Data/Trait data/Seed dispersal/seed_all_traits.csv", row.names=FALSE)
 
 ##################################################################################################################
 ##################################################################################################################
