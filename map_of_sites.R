@@ -18,7 +18,7 @@ library(gifski)
 library(mapproj)
 
 ## add data
-BBS_sites <- read.csv("../Data/BBS sites/BBS_filtered_sites_final.csv", header=TRUE)
+BBS_sites <- read.csv("../Data/BBS_site_data/BBS_filtered_sites_final.csv", header=TRUE)
 
 sites <- unique(subset(BBS_sites[c(1,6,7)]))
 
@@ -45,3 +45,4 @@ p <-
         axis.ticks = element_blank(),
         plot.title = element_text(hjust = 0, size = 16, vjust=0))
 p  
+ggsave(filename="../Graphs/map_of_sites.png", width=5, height=7)
