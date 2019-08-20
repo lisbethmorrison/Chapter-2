@@ -13,7 +13,8 @@ library(dplyr)
 ## read in data
 BBS_2018 <- read.csv("../Data/BBS_abund_data/BBS_data_2018.csv", header=TRUE)
 BBS_2004_2017 <- read.csv("../Data/BBS_abund_data/BBS_data_2004_2017.csv", header=TRUE)
-spp_list <- read.csv("../Data/Trait data/seed_dispersing_spp_list_JAT.csv", header=TRUE)
+seed_spp_list <- read.csv("../Data/Trait data/seed_dispersing_spp_list_JAT.csv", header=TRUE)
+invert_spp_list <- read.csv("../Data/Trait data/insectivores_spp_list_JAT.csv", header=TRUE)
 
 BBS_2018$YEAR <- as.factor(BBS_2018$YEAR)
 
@@ -73,17 +74,32 @@ length(unique(BBS_final3$GRIDREF)) ## 200 sites still
 ## change some common names to merge with trait species list
 BBS_final3$ENGLISH_NAME[ BBS_final3$ENGLISH_NAME == "Common Crossbill" ] <- "Crossbill"
 BBS_final3$ENGLISH_NAME[ BBS_final3$ENGLISH_NAME == "Feral Pigeon" ] <- "Rock Dove"
+BBS_final3$ENGLISH_NAME[ BBS_final3$ENGLISH_NAME == "Cetti's Warbler" ] <- "Cetti Warbler" ## apostrophe's don't merge
 
 ## merge seed dispersing species list (so we only have BBS data for seed dispersers)
-spp_list <- spp_list[,-c(2,3,5)]
-spp_list <- spp_list[spp_list$yes_no==1,] ## 53 species which are seed dispersers
-BBS_final4 <- merge(BBS_final3, spp_list, by.x="ENGLISH_NAME", by.y="species")
+seed_spp_list <- seed_spp_list[,-c(2,3,5)]
+seed_spp_list <- seed_spp_list[seed_spp_list$yes_no==1,] ## 53 species which are seed dispersers
+BBS_final4 <- merge(BBS_final3, seed_spp_list, by.x="ENGLISH_NAME", by.y="species")
 length(unique(BBS_final4$ENGLISH_NAME)) ## 43 species which have BBS data
 
+## merge invertivore species list (so we only have BBS data for pest control species)
+invert_spp_list <- invert_spp_list[,-c(2,4)]
+invert_spp_list <- invert_spp_list[invert_spp_list$yes_no==1,] ## 108 species which are pest controllers
+invert_spp_list$species <- as.character(invert_spp_list$species)
+invert_spp_list$species[ invert_spp_list$species == "Cetti’s Warbler" ] <- "Cetti Warbler" ## won't merge with apostrophe
+BBS_final5 <- merge(BBS_final3, invert_spp_list, by.x="ENGLISH_NAME", by.y="species")
+length(unique(BBS_final5$ENGLISH_NAME)) ## 74 species which have BBS data
 
-## save BBS_final
-write.csv(BBS_final4, file="../Data/BBS_abund_data/BBS_2004_2018.csv", row.names=FALSE) ## 200 sites and 124 species from 2004-2018
+## save seed dispersal files
+write.csv(BBS_final4, file="../Data/Analysis_data/Seed dispersal/BBS_2004_2018_seed.csv", row.names=FALSE) ## 200 sites and 43 species from 2004-2018
 spp_list2 <- BBS_final4[,c(1,2)] 
 spp_list2 <- unique(spp_list2)
 ## save species list (43 species)
-write.csv(spp_list2, file="../Data/BBS_abund_data/BBS_seed_species_list.csv", row.names=FALSE) ## 124 species
+write.csv(spp_list2, file="../Data/Analysis_data/Seed dispersal/BBS_seed_species_list.csv", row.names=FALSE) ## 43 species
+
+## save invertivore files
+write.csv(BBS_final5, file="../Data/Analysis_data/Pest control/BBS_2004_2018_invert.csv", row.names=FALSE) ## 200 sites and 43 species from 2004-2018
+spp_list3 <- BBS_final5[,c(1,2)] 
+spp_list3 <- unique(spp_list3)
+## save species list (73 species)
+write.csv(spp_list3, file="../Data/Analysis_data/Pest control/BBS_invert_species_list.csv", row.names=FALSE) ## 73 species
