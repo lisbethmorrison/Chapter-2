@@ -253,3 +253,131 @@ par(mfrow=c(1,1))
 hist(residuals(mean_FD4))
 par(mfrow=c(2,2))
 plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites
+
+
+############################################################
+######## RUN SAME ANALYSIS ON SUBSET OF SPECIES ############
+############################################################
+
+rm(list=ls()) # clear R
+
+## analysis on full dataset (NOT subset of 28 species)
+## read in data
+effect_28 <- read.csv("../Data/Analysis_data/Seed dispersal/Effect_28spp_final.csv", header=TRUE)
+response_28 <- read.csv("../Data/Analysis_data/Seed dispersal/Response_28spp_final.csv", header=TRUE)
+effect_both_28 <- read.csv("../Data/Analysis_data/Seed dispersal/Effect_both_28spp_final.csv", header=TRUE)
+response_both_28 <- read.csv("../Data/Analysis_data/Seed dispersal/Response_both_28spp_final.csv", header=TRUE)
+
+## keep only gridref, FD, FDis, mean and stability from each dataset
+effect_28 <- effect_28[,c(1,2,4,7:8)]
+response_28 <- response_28[,c(1,2,4,7:8)]
+effect_both_28 <- effect_both_28[,c(1,2,4,7:8)]
+response_both_28 <- response_both_28[,c(1,2,4,7:8)]
+
+#######################################################
+#### Hypothesis 1: effect trait diversity correlates with mean function, not stability
+str(effect_28)
+hist(effect_28$mean) ## right skew
+effect_28$mean_log <- log(effect_28$mean)
+hist(effect_28$mean_log) ## much better
+hist(effect_28$stability) ## slight right skew
+effect_28$stability_log <- log(effect_28$stability)
+hist(effect_28$stability_log) ## better
+
+## run models
+mean_FD <- lm(mean_log ~ FD + FDis, data=effect_28)
+summary(mean_FD) ## mean has positive relationship with FD and negative relationship with FDis
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD))
+par(mfrow=c(2,2))
+plot(mean_FD) 
+
+stability_FD <- lm(stability_log ~ FD + FDis, data=effect_28)
+summary(stability_FD) ## stability has negative relationship with FD and positive relationship with FDis
+
+par(mfrow=c(1,1))
+hist(residuals(stability_FD))
+par(mfrow=c(2,2))
+plot(stability_FD) 
+
+#######################################################
+#### Hypothesis 2: response trait diversity correlates with stability of function, not mean
+str(response_28)
+hist(response_28$mean) ## right skew
+response_28$mean_log <- log(response_28$mean)
+hist(response_28$mean_log) ## much better
+hist(response_28$stability) ## slight right skew
+response_28$stability_log <- log(response_28$stability)
+hist(response_28$stability_log) ## better
+
+## run models
+mean_FD2 <- lm(mean_log ~ FD + FDis, data=response_28)
+summary(mean_FD2) ## mean has positive relationship FD
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD2))
+par(mfrow=c(2,2))
+plot(mean_FD2) 
+
+stability_FD2 <- lm(stability_log ~ FD + FDis, data=response_28)
+summary(stability_FD2) ## stability has negative relationship with FD and positive relationship with FDis
+
+par(mfrow=c(1,1))
+hist(residuals(stability_FD2))
+par(mfrow=c(2,2))
+plot(stability_FD2) 
+
+#######################################################
+#### Hypothesis 3: effect and both trait diversity correlates more strongly with mean compared to stability
+str(effect_both_28)
+hist(effect_both_28$mean) ## right skew
+effect_both_28$mean_log <- log(effect_both_28$mean)
+hist(effect_both_28$mean_log) ## much better
+hist(effect_both_28$stability) ## slight right skew
+effect_both_28$stability_log <- log(effect_both_28$stability)
+hist(effect_both_28$stability_log) ## better
+
+## run models
+mean_FD3 <- lm(mean_log ~ FD + FDis, data=effect_both_28)
+summary(mean_FD3) ## mean has positive relationship FD and negative relationship with FDis
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD3))
+par(mfrow=c(2,2))
+plot(mean_FD3) 
+
+stability_FD3 <- lm(stability_log ~ FD + FDis, data=effect_both_28)
+summary(stability_FD3) ## stability has negative relationship with FD and positive relationship with FDis
+
+par(mfrow=c(1,1))
+hist(residuals(stability_FD3))
+par(mfrow=c(2,2))
+plot(stability_FD3) 
+
+#######################################################
+#### Hypothesis 4: response and both trait diversity correlates more strongly with stability compared to mean
+str(response_both_28)
+hist(response_both_28$mean) ## right skew
+response_both_28$mean_log <- log(response_both_28$mean)
+hist(response_both_28$mean_log) ## much better
+hist(response_both_28$stability) ## slight right skew
+response_both_28$stability_log <- log(response_both_28$stability)
+hist(response_both_28$stability_log) ## better
+
+## run models
+mean_FD4 <- lm(mean_log ~ FD + FDis, data=response_both_28)
+summary(mean_FD4) ## mean has positive relationship FD
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD4))
+par(mfrow=c(2,2))
+plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites
+
+stability_FD4 <- lm(stability_log ~ FD + FDis, data=response_both_28)
+summary(stability_FD4) ## stability has negative relationship with FD and positive relationship with FDis
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD4))
+par(mfrow=c(2,2))
+plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites

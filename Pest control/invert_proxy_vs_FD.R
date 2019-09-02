@@ -250,3 +250,127 @@ par(mfrow=c(1,1))
 hist(residuals(mean_FD4))
 par(mfrow=c(2,2))
 plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites
+
+
+##########################################################
+######## REPEAT ANALYSIS ON SUBSET OF SPECIES ############
+##########################################################
+
+rm(list=ls()) # clear R
+
+## read in data
+effect_42 <- read.csv("../Data/Analysis_data/Pest control/Effect_42spp_final.csv", header=TRUE)
+response_42 <- read.csv("../Data/Analysis_data/Pest control/Response_42spp_final.csv", header=TRUE)
+effect_both_42 <- read.csv("../Data/Analysis_data/Pest control/Effect_both_42spp_final.csv", header=TRUE)
+response_both_42 <- read.csv("../Data/Analysis_data/Pest control/Response_both_42spp_final.csv", header=TRUE)
+
+## keep only gridref, FD, FDis, mean and stability from each dataset
+effect_42 <- effect_42[,c(1,2,4,7:8)]
+response_42 <- response_42[,c(1,2,4,7:8)]
+effect_both_42 <- effect_both_42[,c(1,2,4,7:8)]
+response_both_42 <- response_both_42[,c(1,2,4,7:8)]
+
+#######################################################
+#### Hypothesis 1: effect trait diversity correlates with mean function, not stability
+str(effect_42)
+hist(effect_42$mean) ## right skew
+effect_42$mean_log <- log(effect_42$mean)
+hist(effect_42$mean_log) ## much better
+hist(effect_42$stability) ## looks good
+
+## run models
+mean_FD <- lm(mean_log ~ FD + FDis, data=effect_42)
+summary(mean_FD) ## non-significant
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD))
+par(mfrow=c(2,2))
+plot(mean_FD) 
+
+stability_FD <- lm(stability ~ FD + FDis, data=effect_42)
+summary(stability_FD) ## stability has negative relationship with FD 
+
+par(mfrow=c(1,1))
+hist(residuals(stability_FD))
+par(mfrow=c(2,2))
+plot(stability_FD) 
+par(mfrow=c(1,1))
+
+#######################################################
+#### Hypothesis 2: response trait diversity correlates with stability of function, not mean
+str(response_42)
+hist(response_42$mean) ## right skew
+response_42$mean_log <- log(response_42$mean)
+hist(response_42$mean_log) ## much better
+hist(response_42$stability) ## good
+
+## run models
+mean_FD2 <- lm(mean_log ~ FD + FDis, data=response_42)
+summary(mean_FD2) ## non-significant
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD2))
+par(mfrow=c(2,2))
+plot(mean_FD2) 
+
+stability_FD2 <- lm(stability ~ FD + FDis, data=response_42)
+summary(stability_FD2) ## Non-significant
+
+par(mfrow=c(1,1))
+hist(residuals(stability_FD2))
+par(mfrow=c(2,2))
+plot(stability_FD2) 
+par(mfrow=c(1,1))
+
+#######################################################
+#### Hypothesis 3: effect and both trait diversity correlates more strongly with mean compared to stability
+str(effect_both_42)
+hist(effect_both_42$mean) ## right skew
+effect_both_42$mean_log <- log(effect_both_42$mean)
+hist(effect_both_42$mean_log) ## much better
+hist(effect_both_42$stability) ## slight right skew
+effect_both_42$stability_log <- log(effect_both_42$stability)
+hist(effect_both_42$stability_log) ## better
+
+## run models
+mean_FD3 <- lm(mean_log ~ FD + FDis, data=effect_both_42)
+summary(mean_FD3) ## non-significant (FDis negative p=0.06)
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD3))
+par(mfrow=c(2,2))
+plot(mean_FD3) 
+
+stability_FD3 <- lm(stability_log ~ FD + FDis, data=effect_both_42)
+summary(stability_FD3) ## Non-significant 
+
+par(mfrow=c(1,1))
+hist(residuals(stability_FD3))
+par(mfrow=c(2,2))
+plot(stability_FD3) 
+par(mfrow=c(1,1))
+
+#######################################################
+#### Hypothesis 4: response and both trait diversity correlates more strongly with stability compared to mean
+str(response_both_42)
+hist(response_both_42$mean) ## right skew
+response_both_42$mean_log <- log(response_both_42$mean)
+hist(response_both_42$mean_log) ## much better
+hist(response_both_42$stability) ## good
+
+## run models
+mean_FD4 <- lm(mean_log ~ FD + FDis, data=response_both_42)
+summary(mean_FD4) ## non-significant
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD4))
+par(mfrow=c(2,2))
+plot(mean_FD4) 
+
+stability_FD4 <- lm(stability ~ FD + FDis, data=response_both_42)
+summary(stability_FD4) ## non-significant
+
+par(mfrow=c(1,1))
+hist(residuals(mean_FD4))
+par(mfrow=c(2,2))
+plot(mean_FD4) 
