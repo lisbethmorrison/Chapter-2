@@ -9,6 +9,7 @@ rm(list=ls()) # clear R
 options(scipen=999)
 
 library(rcompanion)
+library(ggplot2)
 
 ## read in data
 proxy_effect <- read.csv("../Data/Analysis_data/Pest control/BBS_proxy_invert_effect.csv", header=TRUE) ## 48 spp 199 sites
@@ -166,6 +167,14 @@ plot(mean_FD)
 stability_FD <- lm(stability ~ FD + FDis, data=effect_48)
 summary(stability_FD) ## stability has negative relationship with FD 
 
+## plot result stability ~ FD
+ggplot(effect_48, aes(x = FD, y = stability)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "black") +
+  xlab("FD effect traits") +
+  ylab("Stability") +
+  theme_classic()
+
 par(mfrow=c(1,1))
 hist(residuals(stability_FD))
 par(mfrow=c(2,2))
@@ -191,6 +200,14 @@ plot(mean_FD2)
 
 stability_FD2 <- lm(stability ~ FD + FDis, data=response_63)
 summary(stability_FD2) ## stability has negative relationship with FD
+
+## plot result stability ~ FD
+ggplot(response_63, aes(x = FD, y = stability)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "black") +
+  xlab("FD response traits") +
+  ylab("Stability") +
+  theme_classic()
 
 par(mfrow=c(1,1))
 hist(residuals(stability_FD2))
