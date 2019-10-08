@@ -9,6 +9,7 @@ rm(list=ls()) # clear R
 options(scipen=999)
 
 library(rcompanion)
+library(ggplot2)
 
 ## read in data
 proxy_effect <- read.csv("../Data/Analysis_data/Seed dispersal/BBS_proxy_seed_effect.csv", header=TRUE) ## 32 spp 199 sites
@@ -163,10 +164,26 @@ summary(mean_FD) ## mean has positive relationship with FD and negative relation
 par(mfrow=c(1,1))
 hist(residuals(mean_FD))
 par(mfrow=c(2,2))
-plot(mean_FD) 
+plot(mean_FD)
+
+## plot result mean ~ FD
+ggplot(effect_32, aes(x = FD, y = mean_log)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "black") +
+  xlab("FD effect traits") +
+  ylab("(log) Mean") +
+  theme_classic()
 
 stability_FD <- lm(stability_log ~ FD + FDis, data=effect_32)
 summary(stability_FD) ## stability has negative relationship with FD and positive relationship with FDis
+
+## plot result stability ~ FD
+ggplot(effect_32, aes(x = FD, y = stability_log)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "black") +
+  xlab("FD effect traits") +
+  ylab("(log) Stability") +
+  theme_classic()
 
 par(mfrow=c(1,1))
 hist(residuals(stability_FD))
@@ -219,8 +236,18 @@ hist(residuals(mean_FD3))
 par(mfrow=c(2,2))
 plot(mean_FD3) 
 
+## plot result mean ~ FD
+ggplot(effect_both_32, aes(x = FD, y = mean_log)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "black")
+
 stability_FD3 <- lm(stability_log ~ FD + FDis, data=effect_both_32)
 summary(stability_FD3) ## stability has negative relationship with FD and positive relationship with FDis
+
+## plot result stability ~ FD
+ggplot(effect_both_32, aes(x = FD, y = stability_log)) + 
+  geom_point() +
+  stat_smooth(method = "lm", col = "black")
 
 par(mfrow=c(1,1))
 hist(residuals(stability_FD3))
