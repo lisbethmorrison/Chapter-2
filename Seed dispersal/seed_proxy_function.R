@@ -29,6 +29,87 @@ length(unique(BBS_final_response$ENGLISH_NAME)) ## 38 species
 BBS_final_all <- merge(BBS_final, all_traits, by=c("ENGLISH_NAME", "CBC_CODE"), all=FALSE)
 length(unique(BBS_final_all$ENGLISH_NAME)) ## 28 species
 
+#### try using partial pooling to estimate abundance for species with missing data
+library(lme4)
+library(dplyr)
+library(tibble)
+## visualise data for each species
+
+## get subset of data on one site for now
+bbs_data <- subset(BBS_final_effect, GRIDREF == "TR0642")
+bbs_data <- bbs_data[,-c(2,4,7:12)]
+
+bbs_data$ENGLISH_NAME <- as.character(bbs_data$ENGLISH_NAME)
+bbs_data$YEAR <- as.numeric(bbs_data$YEAR)
+bbs_data$TOT <- as.numeric(bbs_data$TOT)
+
+ggplot(bbs_data) + 
+  aes(x = YEAR, y = TOT) + 
+  stat_smooth(method = "lm", se = FALSE, fullrange = TRUE) +
+  geom_point() +
+  facet_wrap("ENGLISH_NAME")
+
+#### NO POOLING #####
+df_no_pooling <- lmList(TOT ~ YEAR | ENGLISH_NAME, bbs_data) %>% 
+  coef() %>% 
+  # Subject IDs are stored as row-names. Make them an explicit column
+  rownames_to_column("ENGLISH_NAME") %>% 
+  rename(Intercept = `(Intercept)`, Slope_year = YEAR) %>% 
+  add_column(Model = "No pooling")
+
+##### COMPLETE POOLING #####
+m_pooled <- lm(TOT ~ YEAR, bbs_data) 
+
+# Repeat the intercept and slope terms for each participant
+df_pooled <- data_frame(
+  Model = "Complete pooling",
+  ENGLISH_NAME = unique(bbs_data$ENGLISH_NAME),
+  Intercept = coef(m_pooled)[1], 
+  Slope_year = coef(m_pooled)[2])
+
+df_models <- bind_rows(df_pooled, df_no_pooling) %>% 
+  left_join(bbs_data, by = "ENGLISH_NAME")
+
+p_model_comparison <- ggplot(df_models) + 
+  aes(x = YEAR, y = TOT) + 
+  # Set the color mapping in this layer so the points don't get a color
+  geom_abline(aes(intercept = Intercept, slope = Slope_year, color = Model),
+              size = .75) + 
+  geom_point() +
+  facet_wrap("ENGLISH_NAME") +
+  #labs(x = xlab, y = ylab) + 
+  #scale_x_continuous(breaks = 0:4 * 2) + 
+  # Fix the color palette 
+  scale_color_brewer(palette = "Dark2") + 
+  theme(legend.position = "top")
+
+p_model_comparison
+
+#### PARTIAL POOLING ####
+m <- lmer(TOT ~ 1 + YEAR + (1+YEAR|ENGLISH_NAME), bbs_data)
+
+relgrad <- with(m@optinfo$derivs,solve(Hessian,gradient))
+max(abs(relgrad))
+
+df_partial_pooling <- coef(m)[["ENGLISH_NAME"]] %>% 
+  rownames_to_column("ENGLISH_NAME") %>% 
+  as_tibble() %>% 
+  rename(Intercept = `(Intercept)`, Slope_year = YEAR) %>% 
+  add_column(Model = "Partial pooling")
+
+df_models <- bind_rows(df_pooled, df_no_pooling, df_partial_pooling) %>% 
+  left_join(bbs_data, by = "ENGLISH_NAME")
+
+# Replace the data-set of the last plot
+p_model_comparison %+% df_models
+
+## zoom in on some key species (first 3 have missing data, last one doesn't)
+df_zoom <- df_models %>% 
+  filter(ENGLISH_NAME %in% c("Chaffinch", "Garden Warbler", "Bullfinch", "Woodpigeon"))
+p_model_comparison %+% df_zoom
+
+
+
 ############################################################################################################
 ############################################################################################################
 #### MEAN FUNCTION
