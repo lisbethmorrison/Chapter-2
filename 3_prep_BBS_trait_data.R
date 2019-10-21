@@ -14,7 +14,7 @@ trait_data <- read.csv("../Data/Trait data/UK_bird_traits.csv", header=TRUE) ## 
 ## additional trait data from external sources
 bird_STI <- read.csv("../Data/Trait data/Bird_STI_144_spp.csv", header=TRUE)
 # clutch_size <- read.csv("../Data/Trait data/Clutchsizdata_Jetz2008.csv", header=TRUE)
-# life_therm_hsi <- read.csv("../Data/Trait data/lifespan_thermalmax_hsi_traits.csv", header=TRUE)
+life_therm_hsi <- read.csv("../Data/Trait data/lifespan_thermalmax_hsi_traits.csv", header=TRUE)
 brood_ssi <- read.csv("../Data/Trait data/Johnstone_etal_2014_traits.csv", header=TRUE)
 clutch_brood_life <- read.csv("../Data/Trait data/Amniote_clutch_brood_longevity.csv", header=TRUE)
 
@@ -40,7 +40,7 @@ trait_data$Common_name[ trait_data$Common_name == "Saviâ€™s Warbler" ] <- "
 #######################################################
 
 ## merge trait data with BBS species list
-seed_bbs_trait_data <- merge(seed_spp_list, trait_data, by.x="ENGLISH_NAME", by.y="Common_name", all=FALSE) ## 43 species (all seed-eating birds with BBS and trait data)
+seed_bbs_trait_data <- merge(seed_spp_list, trait_data, by.x="ENGLISH_NAME", by.y="Common_name", all=FALSE) ## 40 species (all seed-eating birds with BBS and trait data)
 
 ## complete the BBS_trait_data by adding more traits from external sources
 ## remove apostrophes from johnstone file (can't remove them using gsub)
@@ -59,17 +59,18 @@ seed_bbs_trait_data <- merge(seed_bbs_trait_data, clutch_brood_life, by.x=c("ENG
                         by.y=c("ENGLISH_NAME", "Scientific_name"), all.x=TRUE)
 ## merge trait data with STI 
 seed_bbs_trait_data <- merge(seed_bbs_trait_data, bird_STI, by.x="ENGLISH_NAME", by.y="sp", all.x=TRUE)
-#### seed_bbs_trait_data has 43 species with 81 columns
+## merge trait data with life_therm_hsi
+seed_bbs_trait_data <- merge(seed_bbs_trait_data, life_therm_hsi, by.x="ENGLISH_NAME", by.y="common_name", all.x=TRUE)
+#### seed_bbs_trait_data has 40 species with 84 columns
 
 ## not all these columns are needed
-seed_bbs_trait_data <- seed_bbs_trait_data[,-c(4:15,21,23:27,34,39:50,61:76)]
-## 43 species with 34 columns
+seed_bbs_trait_data <- seed_bbs_trait_data[,-c(4:17,19,21,23:27,34,39:76)]
+## 40 species with 24 columns
 summary(seed_bbs_trait_data)
 
 ## save file
 write.csv(seed_bbs_trait_data, file="../Data/Analysis_data/Seed dispersal/BBS_seed_trait_data.csv", row.names=FALSE)
-## trait data for 114 species
-## seeed-eating species which have trait AND abundance data (43 species)
+## seeed-eating species which have trait AND abundance data (40 species)
 seed_bbs_trait_data <- read.csv("../Data/Analysis_data/Seed dispersal/BBS_seed_trait_data.csv", header=TRUE)
 
 #########
@@ -136,17 +137,33 @@ invert_bbs_trait_data <- merge(invert_bbs_trait_data, clutch_brood_life, by.x=c(
                              by.y=c("ENGLISH_NAME", "Scientific_name"), all.x=TRUE)
 ## merge trait data with STI 
 invert_bbs_trait_data <- merge(invert_bbs_trait_data, bird_STI, by.x="ENGLISH_NAME", by.y="sp", all.x=TRUE)
-#### invert_bbs_trait_data has 43 species with 81 columns
+
+## merge trait data with life_therm_hsi
+invert_bbs_trait_data <- merge(invert_bbs_trait_data, life_therm_hsi, by.x="ENGLISH_NAME", by.y="common_name", all.x=TRUE)
+
+#### invert_bbs_trait_data has 66 species with 84 columns
 
 ## not all these columns are needed
-invert_bbs_trait_data <- invert_bbs_trait_data[,-c(4:15,21,23:27,34,39:50,61:76)]
-## 43 species with 34 columns
+invert_bbs_trait_data <- invert_bbs_trait_data[,-c(4:17,19,21,23:27,34,39:76)]
+## 66 species with 24 columns
 summary(invert_bbs_trait_data)
 
 ## save file
 write.csv(invert_bbs_trait_data, file="../Data/Analysis_data/Pest control/BBS_invert_trait_data.csv", row.names=FALSE)
-## trait data for 114 species
-## seeed-eating species which have trait AND abundance data (43 species)
+## invert-eating species which have trait AND abundance data (66 species)
+## also merge both seed and invert trait databases (complete data for ALL species analysed)
+# seed_bbs_trait_data$eco_function <- "seed"
+# invert_bbs_trait_data$eco_function <- "invert"
+trait_data <- rbind(seed_bbs_trait_data, invert_bbs_trait_data)
+trait_data <- unique(trait_data) ## 81 unique species (25 species which eat seeds and inverts)
+trait_data_info  <- colSums(!is.na(trait_data))
+trait_data_info <- as.data.frame(trait_data_info)
+trait_data_info$trait <- row.names(trait_data_info)
+rownames(trait_data_info) <- 1:nrow(trait_data_info)
+## 9 out of 24 traits are missing data (two traits are duplicates - lifespan and clutch size)
+## save this file
+write.csv(trait_data, file="../Data/Trait data/ALL_trait_data.csv", row.names=FALSE)
+
 invert_bbs_trait_data <- read.csv("../Data/Analysis_data/Pest control/BBS_invert_trait_data.csv", header=TRUE)
 
 #########
