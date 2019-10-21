@@ -38,6 +38,7 @@ library(tibble)
 ## get subset of data on one site for now
 bbs_data <- subset(BBS_final_effect, GRIDREF == "TR0642")
 bbs_data <- bbs_data[,-c(2,4,7:12)]
+bbs_data <- BBS_final_effect
 
 bbs_data$ENGLISH_NAME <- as.character(bbs_data$ENGLISH_NAME)
 bbs_data$YEAR <- as.numeric(bbs_data$YEAR)
@@ -86,7 +87,20 @@ p_model_comparison <- ggplot(df_models) +
 p_model_comparison
 
 #### PARTIAL POOLING ####
-m <- lmer(TOT ~ 1 + YEAR + (1+YEAR|ENGLISH_NAME), bbs_data)
+m <- lmer(TOT ~ 1 + YEAR + (1+YEAR|ENGLISH_NAME), bbs_data) ## singular fit error
+tt <- getME(m,"theta")
+ll <- getME(m,"lower")
+min(tt[ll==0])
+
+m2 <- lmer(TOT ~ 1 + YEAR + (1+YEAR|ENGLISH_NAME), bbs_data, 
+           control = lmerControl(optimizer = "optimx", calc.derivs = FALSE, 
+                                 optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE)))
+
+## try different optimizer
+library(optimx)
+ss <- getME(m,c("theta","fixef"))
+m2 <- update(m,start=ss,control=lmerControl(optimizer="nlminb",
+                                                 optCtrl=list(maxfun=2e5)))
 
 relgrad <- with(m@optinfo$derivs,solve(Hessian,gradient))
 max(abs(relgrad))
@@ -105,7 +119,7 @@ p_model_comparison %+% df_models
 
 ## zoom in on some key species (first 3 have missing data, last one doesn't)
 df_zoom <- df_models %>% 
-  filter(ENGLISH_NAME %in% c("Chaffinch", "Garden Warbler", "Bullfinch", "Woodpigeon"))
+  filter(ENGLISH_NAME %in% c("Chaffinch", "Whimbrel", "Crossbill", "Crane"))
 p_model_comparison %+% df_zoom
 
 
@@ -114,12 +128,16 @@ p_model_comparison %+% df_zoom
 ############################################################################################################
 #### MEAN FUNCTION
 
-# BBS_mean_effect <- BBS_final_effect %>% group_by(GRIDREF) %>% summarise(Mean_abund = mean(TOT)) ## 32 species at 199 sites
-# BBS_mean_response <- BBS_final_response %>% group_by(GRIDREF) %>% summarise(Mean_abund = mean(TOT)) ## 38 species at 200 sites
-# BBS_mean_effect_response <- BBS_final_effect_response %>% group_by(GRIDREF) %>% summarise(Mean_abund = mean(TOT)) ## 28 species at 199 sites
-
-## wrong way to calculate mean abundance --> should take total across all years for each species, then mean across all species at each site
-## this is done below anyway to calculate stability
+# ## take the mean abundance for each species at each site over time
+# BBS_mean_effect <- BBS_final_effect %>% group_by(ENGLISH_NAME, GRIDREF) %>% summarise(Mean_abund = mean(TOT)) 
+# BBS_mean_response <- BBS_final_response %>% group_by(ENGLISH_NAME, GRIDREF) %>% summarise(Mean_abund = mean(TOT)) 
+# BBS_mean_all <- BBS_final_all %>% group_by(ENGLISH_NAME, GRIDREF) %>% summarise(Mean_abund = mean(TOT)) 
+# 
+# ## calculate the sum of mean abundance at each site
+# BBS_mean_effect <- BBS_mean_effect %>% group_by(GRIDREF) %>% summarise(Mean_abund = sum(Mean_abund)) ## 32 species at 199 sites
+# BBS_mean_response <- BBS_mean_response %>% group_by(GRIDREF) %>% summarise(Mean_abund = sum(Mean_abund)) ## 32 species at 199 sites
+# BBS_mean_all <- BBS_mean_all %>% group_by(GRIDREF) %>% summarise(Mean_abund = sum(Mean_abund)) ## 32 species at 199 sites
+## this is done below anyway
 
 ############################################################################################################
 ############################################################################################################
@@ -127,37 +145,46 @@ p_model_comparison %+% df_zoom
 ## calculate mean and SD for each species and site
 
 ### effect species (=32)
-## calc total abundance of each species at each site
-BBS_tot_effect <- BBS_final_effect %>% group_by(GRIDREF,ENGLISH_NAME) %>% summarise(total = sum(TOT))
-## calc mean and SD at each site
-BBS_proxy_effect <- BBS_tot_effect %>% group_by(GRIDREF) %>% summarise(mean = mean(total), sd=sd(total))
-BBS_proxy_effect$CV <- BBS_proxy_effect$sd/BBS_proxy_effect$mean ## calculate CV (=SD/mean)
+## calc mean and SD abundance of each species at each site
+BBS_tot_effect <- BBS_final_effect %>% group_by(GRIDREF,ENGLISH_NAME) %>% summarise(mean_abund = mean(TOT), sd=sd(TOT))
+## the calculate variance of each species (squared SD)
+BBS_tot_effect$variance <- (BBS_tot_effect$sd)^2
+## calc total mean and SD (squareroot of sum of variance) at each site
+BBS_proxy_effect <- BBS_tot_effect %>% group_by(GRIDREF) %>% summarise(sum_mean = sum(mean_abund), sum_var=sum(variance))
+BBS_proxy_effect$sum_sd <- sqrt(BBS_proxy_effect$sum_var)
+BBS_proxy_effect$CV <- BBS_proxy_effect$sum_sd/BBS_proxy_effect$sum_mean ## calculate CV (=SD/mean)
 BBS_proxy_effect$stability <- 1/BBS_proxy_effect$CV ## calculate stability (1/CV)
 ## remove NA values (where there is only one species at a site - can't calc SD or stability)
 BBS_proxy_effect <- na.omit(BBS_proxy_effect) ## 199 sites
 
 ## response species (=38)
-BBS_tot_response <- BBS_final_response %>% group_by(GRIDREF,ENGLISH_NAME) %>% summarise(total = sum(TOT))
-## calc mean and SD at each site
-BBS_proxy_response <- BBS_tot_response %>% group_by(GRIDREF) %>% summarise(mean = mean(total), sd=sd(total))
-BBS_proxy_response$CV <- BBS_proxy_response$sd/BBS_proxy_response$mean ## calculate CV (=SD/mean)
+BBS_tot_response <- BBS_final_response %>% group_by(GRIDREF,ENGLISH_NAME) %>% summarise(mean_abund = mean(TOT), sd=sd(TOT))
+## the calculate variance of each species (squared SD)
+BBS_tot_response$variance <- (BBS_tot_response$sd)^2
+## calc total mean and SD (squareroot of sum of variance) at each site
+BBS_proxy_response <- BBS_tot_response %>% group_by(GRIDREF) %>% summarise(sum_mean = sum(mean_abund), sum_var=sum(variance))
+BBS_proxy_response$sum_sd <- sqrt(BBS_proxy_response$sum_var)
+BBS_proxy_response$CV <- BBS_proxy_response$sum_sd/BBS_proxy_response$sum_mean ## calculate CV (=SD/mean)
 BBS_proxy_response$stability <- 1/BBS_proxy_response$CV ## calculate stability (1/CV)
 ## remove NA values (where there is only one species at a site - can't calc SD or stability)
-BBS_proxy_response <- na.omit(BBS_proxy_response) ## 199 sites
+BBS_proxy_response <- na.omit(BBS_proxy_response) ## 200 sites
 
 ## all trait species (=28)
-BBS_tot_all <- BBS_final_all %>% group_by(GRIDREF, ENGLISH_NAME) %>% summarise(total = sum(TOT))
-## calc mean and SD at each site
-BBS_proxy_all <- BBS_tot_all %>% group_by(GRIDREF) %>% summarise(mean = mean(total), sd=sd(total))
-BBS_proxy_all$CV <- BBS_proxy_all$sd/BBS_proxy_all$mean ## calculate CV (=SD/mean)
+BBS_tot_all <- BBS_final_all %>% group_by(GRIDREF,ENGLISH_NAME) %>% summarise(mean_abund = mean(TOT), sd=sd(TOT))
+## the calculate variance of each species (squared SD)
+BBS_tot_all$variance <- (BBS_tot_all$sd)^2
+## calc total mean and SD (squareroot of sum of variance) at each site
+BBS_proxy_all <- BBS_tot_all %>% group_by(GRIDREF) %>% summarise(sum_mean = sum(mean_abund), sum_var=sum(variance))
+BBS_proxy_all$sum_sd <- sqrt(BBS_proxy_all$sum_var)
+BBS_proxy_all$CV <- BBS_proxy_all$sum_sd/BBS_proxy_all$sum_mean ## calculate CV (=SD/mean)
 BBS_proxy_all$stability <- 1/BBS_proxy_all$CV ## calculate stability (1/CV)
 ## remove NA values (where there is only one species at a site - can't calc SD or stability)
 BBS_proxy_all <- na.omit(BBS_proxy_all) ## 199 sites
 
-## remove SD and total columns from each
-BBS_proxy_effect <- BBS_proxy_effect[,-c(3:4)]
-BBS_proxy_response <- BBS_proxy_response[,-c(3:4)]
-BBS_proxy_all <- BBS_proxy_all[,-c(3:4)]
+## remove sum_var, sum_sd and CV columns from each
+BBS_proxy_effect <- BBS_proxy_effect[,-c(3:5)]
+BBS_proxy_response <- BBS_proxy_response[,-c(3:5)]
+BBS_proxy_all <- BBS_proxy_all[,-c(3:5)]
 
 ## save files
 write.csv(BBS_proxy_effect, file="../Data/Analysis_data/Seed dispersal/BBS_proxy_seed_effect.csv", row.names=FALSE) ## 199 sites
