@@ -147,18 +147,25 @@ response_38 <- response_38[,c(1,2,4,7:8)]
 effect_both_32 <- effect_both_32[,c(1,2,4,7:8)]
 response_both_38 <- response_both_38[,c(1,2,4,7:8)]
 
+## correlation between FDis and FD
+cor.test(effect_32$FD, effect_32$FDis) ## significant, r=0.34
+cor.test(response_38$FD, response_38$FDis) ## significant, r=0.24
+cor.test(effect_both_32$FD, effect_both_32$FDis) ## significant, r=0.26
+cor.test(response_both_38$FD, response_both_38$FDis) ## significant, r=0.17
+######## all week positive significant correlations ########
+
 #######################################################
 #### Hypothesis 1: effect trait diversity correlates with mean function, not stability
 str(effect_32)
-hist(effect_32$mean) ## right skew
-effect_32$mean_log <- log(effect_32$mean)
-hist(effect_32$mean_log) ## much better
+hist(effect_32$sum_mean) ## right skew
+effect_32$mean_sqrt <- sqrt(effect_32$sum_mean)
+hist(effect_32$mean_log) ## better
 hist(effect_32$stability) ## slight right skew
-effect_32$stability_log <- log(effect_32$stability)
-hist(effect_32$stability_log) ## better
+effect_32$stability_sqrt <- sqrt(effect_32$stability)
+hist(effect_32$stability_sqrt) ## better
 
 ## run models
-mean_FD <- lm(mean_log ~ FD + FDis, data=effect_32)
+mean_FD <- lm(mean_sqrt ~ FD + FDis, data=effect_32)
 summary(mean_FD) ## mean has positive relationship with FD and negative relationship with FDis
 
 par(mfrow=c(1,1))
@@ -174,8 +181,8 @@ ggplot(effect_32, aes(x = FD, y = mean_log)) +
   ylab("(log) Mean") +
   theme_classic()
 
-stability_FD <- lm(stability_log ~ FD + FDis, data=effect_32)
-summary(stability_FD) ## stability has negative relationship with FD and positive relationship with FDis
+stability_FD <- lm(stability_sqrt ~ FD + FDis, data=effect_32)
+summary(stability_FD) ## stability has positive relationship with FD and negative relationship with FDis
 
 ## plot result stability ~ FD
 ggplot(effect_32, aes(x = FD, y = stability_log)) + 
@@ -193,15 +200,13 @@ plot(stability_FD)
 #######################################################
 #### Hypothesis 2: response trait diversity correlates with stability of function, not mean
 str(response_38)
-hist(response_38$mean) ## right skew
-response_38$mean_log <- log(response_38$mean)
-hist(response_38$mean_log) ## much better
-hist(response_38$stability) ## slight right skew
-response_38$stability_log <- log(response_38$stability)
-hist(response_38$stability_log) ## better
+hist(response_38$sum_mean) ## right skew
+response_38$mean_sqrt <- sqrt(response_38$sum_mean)
+hist(response_38$mean_sqrt) ## much better
+hist(response_38$stability) ## not bad
 
 ## run models
-mean_FD2 <- lm(mean_log ~ FD + FDis, data=response_38)
+mean_FD2 <- lm(mean_sqrt ~ FD + FDis, data=response_38)
 summary(mean_FD2) ## mean has positive relationship FDis
 
 par(mfrow=c(1,1))
@@ -209,8 +214,8 @@ hist(residuals(mean_FD2))
 par(mfrow=c(2,2))
 plot(mean_FD2) 
 
-stability_FD2 <- lm(stability_log ~ FD + FDis, data=response_38)
-summary(stability_FD2) ## stability has negative relationship with FD and positive relationship with FDis
+stability_FD2 <- lm(stability ~ FD + FDis, data=response_38)
+summary(stability_FD2) ## stability has positive relationship with FDis
 
 par(mfrow=c(1,1))
 hist(residuals(stability_FD2))
@@ -220,12 +225,12 @@ plot(stability_FD2)
 #######################################################
 #### Hypothesis 3: effect and both trait diversity correlates more strongly with mean compared to stability
 str(effect_both_32)
-hist(effect_both_32$mean) ## right skew
-effect_both_32$mean_log <- log(effect_both_32$mean)
+hist(effect_both_32$sum_mean) ## right skew
+effect_both_32$mean_log <- log(effect_both_32$sum_mean)
 hist(effect_both_32$mean_log) ## much better
 hist(effect_both_32$stability) ## slight right skew
-effect_both_32$stability_log <- log(effect_both_32$stability)
-hist(effect_both_32$stability_log) ## better
+effect_both_32$stability_sqrt <- sqrt(effect_both_32$stability)
+hist(effect_both_32$stability_sqrt) ## better
 
 ## run models
 mean_FD3 <- lm(mean_log ~ FD + FDis, data=effect_both_32)
@@ -241,11 +246,11 @@ ggplot(effect_both_32, aes(x = FD, y = mean_log)) +
   geom_point() +
   stat_smooth(method = "lm", col = "black")
 
-stability_FD3 <- lm(stability_log ~ FD + FDis, data=effect_both_32)
-summary(stability_FD3) ## stability has negative relationship with FD and positive relationship with FDis
+stability_FD3 <- lm(stability_sqrt ~ FD + FDis, data=effect_both_32)
+summary(stability_FD3) ## stability has positive relationship with FD 
 
 ## plot result stability ~ FD
-ggplot(effect_both_32, aes(x = FD, y = stability_log)) + 
+ggplot(effect_both_32, aes(x = FD, y = stability_sqrt)) + 
   geom_point() +
   stat_smooth(method = "lm", col = "black")
 
@@ -257,24 +262,24 @@ plot(stability_FD3)
 #######################################################
 #### Hypothesis 4: response and both trait diversity correlates more strongly with stability compared to mean
 str(response_both_38)
-hist(response_both_38$mean) ## right skew
-response_both_38$mean_log <- log(response_both_38$mean)
+hist(response_both_38$sum_mean) ## right skew
+response_both_38$mean_log <- log(response_both_38$sum_mean)
 hist(response_both_38$mean_log) ## much better
 hist(response_both_38$stability) ## slight right skew
-response_both_38$stability_log <- log(response_both_38$stability)
-hist(response_both_38$stability_log) ## better
+response_both_38$stability_sqrt<- sqrt(response_both_38$stability)
+hist(response_both_38$stability_sqrt) ## better
 
 ## run models
 mean_FD4 <- lm(mean_log ~ FD + FDis, data=response_both_38)
-summary(mean_FD4) ## mean has positive relationship FD and FDis
+summary(mean_FD4) ## mean has positive relationship FD 
 
 par(mfrow=c(1,1))
 hist(residuals(mean_FD4))
 par(mfrow=c(2,2))
 plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites
 
-stability_FD4 <- lm(stability_log ~ FD + FDis, data=response_both_38)
-summary(stability_FD4) ## stability has negative relationship with FD and positive relationship with FDis
+stability_FD4 <- lm(stability_sqrt ~ FD + FDis, data=response_both_38)
+summary(stability_FD4) ## stability has positive relationship with FDis
 
 par(mfrow=c(1,1))
 hist(residuals(mean_FD4))
