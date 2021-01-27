@@ -9,3 +9,6 @@
 .Rproj.user/
 *.Rproj
 -SAPC7039.Rhistory
+*.png
+*.pdf
+.txt
