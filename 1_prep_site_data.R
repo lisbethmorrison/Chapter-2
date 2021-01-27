@@ -159,7 +159,7 @@ for (i in year.list){ # loop through years
   num_sites_final <- rbind(num_sites_final, num_sites2)
 }
 
-length(unique(num_sites_final$time_period)) ## 9 (out of 11) time periods were run 
+length(unique(num_sites_final$time_period)) ## 11 time periods were run 
 length(unique(num_sites_final$gridref)) ## 672 sites in total
 ## how many rows per 15-year time period
 num_sites_summ <- num_sites_final %>% group_by(time_period) %>% summarise(freq = n())

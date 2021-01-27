@@ -10,384 +10,324 @@ options(scipen=999)
 
 library(rcompanion)
 library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(gridExtra)
+library(cowplot)
 
 ## read in data
-proxy_effect <- read.csv("../Data/Analysis_data/Pest control/BBS_proxy_invert_effect.csv", header=TRUE) ## 48 spp 199 sites
-proxy_response <- read.csv("../Data/Analysis_data/Pest control/BBS_proxy_invert_response.csv", header=TRUE) ## 63 spp 200 sites
-proxy_all <- read.csv("../Data/Analysis_data/Pest control/BBS_proxy_invert_all.csv", header=TRUE) ## 42 spp 199 sites
-
-## FD dendrogram results
-FD_effect <- read.csv("../Data/Analysis_data/Pest control/FD_effect_48spp.csv", header=TRUE) ## full effect traits
-FD_effect2 <- read.csv("../Data/Analysis_data/Pest control/FD_effect_42spp.csv", header=TRUE) ## subset effect traits
-FD_response <- read.csv("../Data/Analysis_data/Pest control/FD_response_63spp.csv", header=TRUE) ## full response traits
-FD_response2 <- read.csv("../Data/Analysis_data/Pest control/FD_response_42spp.csv", header=TRUE) ## subset response traits
-FD_effect_both <- read.csv("../Data/Analysis_data/Pest control/FD_effect_both_48spp.csv", header=TRUE) ## full effect and both traits
-FD_effect_both2 <- read.csv("../Data/Analysis_data/Pest control/FD_effect_both_42spp.csv", header=TRUE) ## subset effect and both traits
-FD_response_both <- read.csv("../Data/Analysis_data/Pest control/FD_response_both_63spp.csv", header=TRUE) ## full response and both traits
-FD_response_both2 <- read.csv("../Data/Analysis_data/Pest control/FD_response_both_42spp.csv", header=TRUE) ## subset response and both traits
-
+proxy_invert <- read.csv("../Data/Analysis_data/Pest control/BBS_proxy_invert_det2.csv", header=TRUE) ## 67 spp 200 sites
 ## multivariate FD results
-FD_multi_effect <- read.csv("../Data/Analysis_data/Pest control/FD_multi_effect_48spp.csv", header=TRUE) ## full effect traits
-FD_multi_effect2 <- read.csv("../Data/Analysis_data/Pest control/FD_multi_effect_42spp.csv", header=TRUE) ## subset effect traits
-FD_multi_response <- read.csv("../Data/Analysis_data/Pest control/FD_multi_response_63spp.csv", header=TRUE) ## full response traits
-FD_multi_response2 <- read.csv("../Data/Analysis_data/Pest control/FD_multi_response_42spp.csv", header=TRUE) ## subset response traits
-FD_multi_effect_both <- read.csv("../Data/Analysis_data/Pest control/FD_multi_effect_both_48spp.csv", header=TRUE) ## full effect and both traits
-FD_multi_effect_both2 <- read.csv("../Data/Analysis_data/Pest control/FD_multi_effect_both_42spp.csv", header=TRUE) ## subset effect and both traits
-FD_multi_response_both <- read.csv("../Data/Analysis_data/Pest control/FD_multi_response_both_63spp.csv", header=TRUE) ## full response and both traits
-FD_multi_response_both2 <- read.csv("../Data/Analysis_data/Pest control/FD_multi_response_both_42spp.csv", header=TRUE) ## subset response and both traits
+FD_multi_effect <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_effect_det2.csv", header=TRUE) 
+FD_multi_response <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_response_det2.csv", header=TRUE) 
+FD_multi_all <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_all_det2.csv", header=TRUE) 
 
 ##################################################################################################################################################################
 
 ##################### DATA COLLATION FOR ANALYSIS ##################### 
-
-## effect ONLY species and sites (n=48)
-## merge FD dendro and multivariate together
-effect_48 <- merge(FD_effect, FD_multi_effect, by="gridref")
-## merge with proxy for 32 species
-effect_48 <- merge(effect_48, proxy_effect, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(effect_48)[2] <- "FD"
+## remove other multivariate FD metrics that we're not using
+FD_multi_effect <- FD_multi_effect[,c(1,3)]
+colnames(FD_multi_effect)[2] <- "FDis_effect" ## rename FDis column
+FD_multi_response <- FD_multi_response[,c(1,3)]
+colnames(FD_multi_response)[2] <- "FDis_response" ## rename FDis column
+FD_multi_all <- FD_multi_all[,c(1,3)]
+colnames(FD_multi_all)[2] <- "FDis_all" ## rename FDis column
+## merge ALL results into one file
+invert_proxy_FD <- list(proxy_invert, FD_multi_effect, FD_multi_response, FD_multi_all) %>% reduce(left_join, by = "GRIDREF")
 ## save file
-write.csv(effect_48, file="../Data/Analysis_data/Pest control/Effect_48spp_final.csv", row.names=FALSE)
-## 48 species at 199 sites
-
-## response ONLY species and sites (n=63)
-## merge FD dendro and multivariate together
-response_63 <- merge(FD_response, FD_multi_response, by="gridref")
-## merge with proxy for 32 species
-response_63 <- merge(response_63, proxy_response, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(response_63)[2] <- "FD"
-## save file
-write.csv(response_63, file="../Data/Analysis_data/Pest control/Response_63spp_final.csv", row.names=FALSE)
-## 63 species at 200 sites
-
-## effect and both only species and sites (n=48)
-## merge FD dendro and multivariate together
-effect_both_48 <- merge(FD_effect_both, FD_multi_effect_both, by="gridref")
-## merge with proxy for 48 species
-effect_both_48 <- merge(effect_both_48, proxy_effect, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(effect_both_48)[2] <- "FD"
-## save file
-write.csv(effect_both_48, file="../Data/Analysis_data/Pest control/Effect_both_48spp_final.csv", row.names=FALSE)
-## 48 species at 199 sites
-
-## response and both only species and sites (n=63)
-## merge FD dendro and multivariate together
-response_both_63 <- merge(FD_response_both, FD_multi_response, by="gridref")
-## merge with proxy for 63 species
-response_both_63 <- merge(response_both_63, proxy_response, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(response_both_63)[2] <- "FD"
-## save file
-write.csv(response_both_63, file="../Data/Analysis_data/Pest control/Response_both_63spp_final.csv", row.names=FALSE)
-## 63 species at 200 sites
-
-############## same as above for subset of species
-
-## effect ONLY species and sites (n=42)
-## merge FD dendro and multivariate together
-effect_42_sub <- merge(FD_effect2, FD_multi_effect2, by="gridref")
-## merge with proxy for 42 species
-effect_42_sub <- merge(effect_42_sub, proxy_effect, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(effect_42_sub)[2] <- "FD"
-## save file
-write.csv(effect_42_sub, file="../Data/Analysis_data/Pest control/Effect_42spp_final.csv", row.names=FALSE)
-## 42 species at 199 sites
-
-## response ONLY species and sites (n=42)
-## merge FD dendro and multivariate together
-response_42_sub <- merge(FD_response2, FD_multi_response2, by="gridref")
-## merge with proxy for 42 species
-response_42_sub <- merge(response_42_sub, proxy_response, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(response_42_sub)[2] <- "FD"
-## save file
-write.csv(response_42_sub, file="../Data/Analysis_data/Pest control/Response_42spp_final.csv", row.names=FALSE)
-## 42 species at 200 sites
-
-## effect and both only species and sites (n=42)
-## merge FD dendro and multivariate together
-effect_both_42_sub <- merge(FD_effect_both2, FD_multi_effect_both2, by="gridref")
-## merge with proxy for 42 species
-effect_both_42_sub <- merge(effect_both_42_sub, proxy_effect, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(effect_both_42_sub)[2] <- "FD"
-## save file
-write.csv(effect_both_42_sub, file="../Data/Analysis_data/Pest control/Effect_both_42spp_final.csv", row.names=FALSE)
-## 42 species at 199 sites
-
-## response and both only species and sites (n=42)
-## merge FD dendro and multivariate together
-response_both_42_sub <- merge(FD_response_both2, FD_multi_response2, by="gridref")
-## merge with proxy for 42 species
-response_both_42_sub <- merge(response_both_42_sub, proxy_response, by.x="gridref", by.y="GRIDREF")
-## re-name FD_effect to just FD (dendrogram metric)
-names(response_both_42_sub)[2] <- "FD"
-## save file
-write.csv(response_both_42_sub, file="../Data/Analysis_data/Pest control/Response_both_42spp_final.csv", row.names=FALSE)
-## 42 species at 200 sites
+write.csv(invert_proxy_FD, file="../Data/Analysis_data/Pest control/invert_proxy_FD_det2.csv", row.names=FALSE)
 
 ####################################################################################################################################
 
 rm(list=ls()) # clear R
-
-## analysis on full dataset (NOT subset of 28 species)
 ## read in data
-effect_48 <- read.csv("../Data/Analysis_data/Pest control/Effect_48spp_final.csv", header=TRUE)
-response_63 <- read.csv("../Data/Analysis_data/Pest control/Response_63spp_final.csv", header=TRUE)
-effect_both_48 <- read.csv("../Data/Analysis_data/Pest control/Effect_both_48spp_final.csv", header=TRUE)
-response_both_63 <- read.csv("../Data/Analysis_data/Pest control/Response_both_63spp_final.csv", header=TRUE)
+invert_proxy_FD <- read.csv("../Data/Analysis_data/Pest control/invert_proxy_FD_det2.csv", header=TRUE)
+spp_richness <- read.csv("../Data/Analysis_data/Pest Control/mean_spp_richness.csv", header=TRUE)
 
-## keep only gridref, FD, FDis, mean and stability from each dataset
-effect_48 <- effect_48[,c(1,2,4,7:8)]
-response_63 <- response_63[,c(1,2,4,7:8)]
-effect_both_48 <- effect_both_48[,c(1,2,4,7:8)]
-response_both_63 <- response_both_63[,c(1,2,4,7:8)]
+## check distribution of response variables (mean and stability proxy)
+hist(invert_proxy_FD$mean_abund) ## slight right skew
+hist(invert_proxy_FD$stability) ## slight right skew
+invert_proxy_FD$sqrt_abund <- sqrt(invert_proxy_FD$mean_abund)
+hist(invert_proxy_FD$sqrt_abund) ## looks better
+invert_proxy_FD$sqrt_stability <- sqrt(invert_proxy_FD$stability)
+hist(invert_proxy_FD$sqrt_stability) ## looks better
+### use the sqrt transformed variables 
 
-#######################################################
-#### Hypothesis 1: effect trait diversity correlates with mean function, not stability
-str(effect_48)
-hist(effect_48$mean) ## right skew
-effect_48$mean_log <- log(effect_48$mean)
-hist(effect_48$mean_log) ## much better
-hist(effect_48$stability) ## looks good
+## merge species richness with FD/proxy data
+invert_proxy_FD <- merge(invert_proxy_FD, spp_richness, by="GRIDREF")
+## correlation between spp richness and FD metrics
+cor1 <- cor.test(invert_proxy_FD$FDis_effect, invert_proxy_FD$average_spp_richness, method="pearson")
+cor1 ## -0.0009, p=0.99
+cor2 <- cor.test(invert_proxy_FD$FDis_response, invert_proxy_FD$average_spp_richness, method="pearson")
+cor2 ## 0.26, p<0.001
+cor3 <- cor.test(invert_proxy_FD$FDis_all, invert_proxy_FD$average_spp_richness, method="pearson")
+cor3 ## 0.06, p=0.34
+## low correlation between FDis and species richness
+cor5 <- cor.test(invert_proxy_FD$average_spp_richness, invert_proxy_FD$sqrt_abund, method="pearson")
+cor5 ## 0.58, p<0.001
+cor5 <- cor.test(invert_proxy_FD$average_spp_richness, invert_proxy_FD$sqrt_stability, method="pearson")
+cor5 ## 0.34, p<0.001
 
-## run models
-mean_FD <- lm(mean_log ~ FD + FDis, data=effect_48)
-summary(mean_FD) ## non-significant
+cor6 <- cor.test(invert_proxy_FD$sqrt_abund, invert_proxy_FD$sqrt_stability, method="pearson")
+cor6 ## 0.1, p-0.16
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD))
-par(mfrow=c(2,2))
-plot(mean_FD) 
+####################################################################
+######################### MEAN PROXY ###############################
+####################################################################
 
-stability_FD <- lm(stability ~ FD + FDis, data=effect_48)
-summary(stability_FD) ## stability has negative relationship with FD 
+#### FD DENDROGRAM METRIC
 
-## plot result stability ~ FD
-ggplot(effect_48, aes(x = FD, y = stability)) + 
-  geom_point() +
-  stat_smooth(method = "lm", col = "black") +
-  xlab("FD effect traits") +
-  ylab("Stability") +
-  theme_classic()
+## Effect traits only
+mean_FD1 <- lm(sqrt_abund ~ FD_effect, data=invert_proxy_FD)
+summary(mean_FD1)
+## significant positive relationship with effect (as hypothesised)
 
-par(mfrow=c(1,1))
-hist(residuals(stability_FD))
-par(mfrow=c(2,2))
-plot(stability_FD) 
-par(mfrow=c(1,1))
+## Effect and both traits
+mean_FD2 <- lm(sqrt_abund ~ FD_effect_both, data=invert_proxy_FD)
+summary(mean_FD2)
+## significant positive relationship with effect and both (as hypothesised)
 
-#######################################################
-#### Hypothesis 2: response trait diversity correlates with stability of function, not mean
-str(response_63)
-hist(response_63$mean) ## right skew
-response_63$mean_log <- log(response_63$mean)
-hist(response_63$mean_log) ## much better
-hist(response_63$stability) ## good
+## Response traits only
+mean_FD3 <- lm(sqrt_abund ~ FD_response, data=invert_proxy_FD)
+summary(mean_FD3)
+## significant positive relationship with response 
 
-## run models
-mean_FD2 <- lm(mean_log ~ FD + FDis, data=response_63)
-summary(mean_FD2) ## non-significant
+## Response and both traits
+mean_FD4 <- lm(sqrt_abund ~ FD_response_both, data=invert_proxy_FD)
+summary(mean_FD4)
+## significant positive relationship with response and both 
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD2))
-par(mfrow=c(2,2))
-plot(mean_FD2) 
+## All traits
+mean_FD5 <- lm(sqrt_abund ~ FD_all, data=invert_proxy_FD)
+summary(mean_FD5)
+## significant positive relationship with all
 
-stability_FD2 <- lm(stability ~ FD + FDis, data=response_63)
-summary(stability_FD2) ## stability has negative relationship with FD
+#### FDis METRIC
 
-## plot result stability ~ FD
-ggplot(response_63, aes(x = FD, y = stability)) + 
-  geom_point() +
-  stat_smooth(method = "lm", col = "black") +
-  xlab("FD response traits") +
-  ylab("Stability") +
-  theme_classic()
+## Effect traits only
+mean_FD6 <- lm(sqrt_abund ~ FDis_effect, data=invert_proxy_FD)
+summary(mean_FD6)
+## significant positive relationship with effect (as hypothesised)
+results_table1 <- data.frame(summary(mean_FD6)$coefficients[,1:4])
+write.csv(results_table1, file = "../Results/Pest control/mean_FDis_effect.csv", row.names=TRUE)
 
-par(mfrow=c(1,1))
-hist(residuals(stability_FD2))
-par(mfrow=c(2,2))
-plot(stability_FD2) 
-par(mfrow=c(1,1))
+## Effect and both traits
+mean_FD7 <- lm(sqrt_abund ~ FDis_effect_both, data=invert_proxy_FD)
+summary(mean_FD7)
+## significant positive relationship with effect and both (as hypothesised)
 
-#######################################################
-#### Hypothesis 3: effect and both trait diversity correlates more strongly with mean compared to stability
-str(effect_both_48)
-hist(effect_both_48$mean) ## right skew
-effect_both_48$mean_log <- log(effect_both_48$mean)
-hist(effect_both_48$mean_log) ## much better
-hist(effect_both_48$stability) ## slight right skew
-effect_both_48$stability_log <- log(effect_both_48$stability)
-hist(effect_both_48$stability_log) ## better
+## Response traits only
+mean_FD8 <- lm(sqrt_abund ~ FDis_response, data=invert_proxy_FD)
+summary(mean_FD8)
+## non-significant
+results_table2 <- data.frame(summary(mean_FD8)$coefficients[,1:4])
+write.csv(results_table2, file = "../Results/Pest control/mean_FDis_response.csv", row.names=TRUE)
 
-## run models
-mean_FD3 <- lm(mean_log ~ FD + FDis, data=effect_both_48)
-summary(mean_FD3) ## non-significant (FDis negative p=0.06)
+## Response and both traits
+mean_FD9 <- lm(sqrt_abund ~ FDis_response_both, data=invert_proxy_FD)
+summary(mean_FD9)
+## non-significant
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD3))
-par(mfrow=c(2,2))
-plot(mean_FD3) 
+## All traits
+mean_FD10 <- lm(sqrt_abund ~ FDis_all, data=invert_proxy_FD)
+summary(mean_FD10)
+## significant positive
+results_table3 <- data.frame(summary(mean_FD10)$coefficients[,1:4])
+write.csv(results_table3, file = "../Results/Pest control/mean_FDis_all.csv", row.names=TRUE)
 
-stability_FD3 <- lm(stability_log ~ FD + FDis, data=effect_both_48)
-summary(stability_FD3) ## stability has negative relationship with FD 
+#########################################################################
+######################### STABILITY PROXY ###############################
+#########################################################################
+#### FD DENDROGRAM METRIC
 
-par(mfrow=c(1,1))
-hist(residuals(stability_FD3))
-par(mfrow=c(2,2))
-plot(stability_FD3) 
-par(mfrow=c(1,1))
+## Effect traits only
+stability_FD1 <- lm(sqrt_stability ~ FD_effect, data=invert_proxy_FD)
+summary(stability_FD1)
+## significant positive relationship with effect
 
-#######################################################
-#### Hypothesis 4: response and both trait diversity correlates more strongly with stability compared to mean
-str(response_both_63)
-hist(response_both_63$mean) ## right skew
-response_both_63$mean_log <- log(response_both_63$mean)
-hist(response_both_63$mean_log) ## much better
-hist(response_both_63$stability) ## good
+## Effect and both traits
+stability_FD2 <- lm(sqrt_stability ~ FD_effect_both, data=invert_proxy_FD)
+summary(stability_FD2)
+## significant positive relationship with effect and both
 
-## run models
-mean_FD4 <- lm(mean_log ~ FD + FDis, data=response_both_63)
-summary(mean_FD4) ## non-significant
+## Response traits only
+stability_FD3 <- lm(sqrt_stability ~ FD_response, data=invert_proxy_FD)
+summary(stability_FD3)
+## significant positive relationship with response (as hypothesised)
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD4))
-par(mfrow=c(2,2))
-plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites
+## Response and both traits
+stability_FD4 <- lm(sqrt_stability ~ FD_response_both, data=invert_proxy_FD)
+summary(stability_FD4)
+## significant positive relationship with response and both (as hypothesised)
 
-stability_FD4 <- lm(stability ~ FD + FDis, data=response_both_63)
-summary(stability_FD4) ## stability has negative relationship with FD
+## all traits
+stability_FD5 <- lm(sqrt_stability ~ FD_all, data=invert_proxy_FD)
+summary(stability_FD5)
+## significant positive relationship with all
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD4))
-par(mfrow=c(2,2))
-plot(mean_FD4) ## row 136 is an outlier - high FDis compared to other sites
+#### FDis METRIC
+
+## Effect traits only
+stability_FD6 <- lm(sqrt_stability ~ FDis_effect, data=invert_proxy_FD)
+summary(stability_FD6)
+## significant negative relationship with effect
+results_table4 <- data.frame(summary(stability_FD6)$coefficients[,1:4])
+write.csv(results_table4, file = "../Results/Pest control/stability_FDis_effect.csv", row.names=TRUE)
+
+## Effect and both traits
+stability_FD7 <- lm(sqrt_stability ~ FDis_effect_both, data=invert_proxy_FD)
+summary(stability_FD7)
+## significant negative relationship with effect and both
+
+## Response traits only
+stability_FD8 <- lm(sqrt_stability ~ FDis_response, data=invert_proxy_FD)
+summary(stability_FD8)
+## significant positive relationship with response (as hypothesised)
+results_table5 <- data.frame(summary(stability_FD8)$coefficients[,1:4])
+write.csv(results_table5, file = "../Results/Pest control/stability_FDis_response.csv", row.names=TRUE)
+
+## Response and both traits
+stability_FD9 <- lm(sqrt_stability ~ FDis_response_both, data=invert_proxy_FD)
+summary(stability_FD9)
+## non-significant (p=0.059) positive
+
+## All traits
+stability_FD10 <- lm(sqrt_stability ~ FDis_all, data=invert_proxy_FD)
+summary(stability_FD10)
+## non-significant
+results_table6 <- data.frame(summary(stability_FD10)$coefficients[,1:4])
+write.csv(results_table6, file = "../Results/Pest control/stability_FDis_all.csv", row.names=TRUE)
+
+## correlation between FD and FDis for each combination of traits
+cor1 <- cor.test(invert_proxy_FD$FD_effect, invert_proxy_FD$FDis_effect, method="pearson")
+cor1 ## r=0.27, p<0.001
+cor2 <- cor.test(invert_proxy_FD$FD_effect_both, invert_proxy_FD$FDis_effect_both, method="pearson")
+cor2 ## r=0.2, p=0.003
+cor3 <- cor.test(invert_proxy_FD$FD_response, invert_proxy_FD$FDis_response, method="pearson")
+cor3 ## r=0.36, p<0.001 - these results agree (the rest disagree)
+cor4 <- cor.test(invert_proxy_FD$FD_response_both, invert_proxy_FD$FDis_response_both, method="pearson")
+cor4 ## r=0.26, p<0.001
+cor5 <- cor.test(invert_proxy_FD$FD_all, invert_proxy_FD$FDis_all, method="pearson")
+cor5 ## r=0.30, p<0.002
+## weak positive correlations between FD and FDis
+
+## correlations between trait combinationsn for each metric
+cor6 <- cor.test(invert_proxy_FD$FD_effect, invert_proxy_FD$FD_response, method="pearson")
+cor6 # FD effect vs response 0.83
+cor7 <- cor.test(invert_proxy_FD$FD_effect_both, invert_proxy_FD$FD_response_both, method="pearson")
+cor7 # FD effect_both vs response_both 0.96
+cor8 <- cor.test(invert_proxy_FD$FDis_effect, invert_proxy_FD$FDis_response, method="pearson")
+cor8 # FDis effect vs response -0.1
+cor9 <- cor.test(invert_proxy_FD$FDis_effect_both, invert_proxy_FD$FDis_response_both, method="pearson")
+cor9 # FDis effect_both vs response_both 0.61
+## species with high FD effect/both diversity are very likely to have high FD response/both diveristy
+## less so with FDis
+
+## plot correlation between FD and FDis
+plot(FD_all ~ FDis_all, data=invert_proxy_FD)
+
+######################################### PLOTS ########################################
+
+## plot result
+r2_predict <- predict(mean_FD6,interval="confidence")
+newdata_mean_effect <- cbind(data.frame(invert_proxy_FD), data.frame(r2_predict))
+
+newdata_mean_effect$fit <- (newdata_mean_effect$fit)^2
+newdata_mean_effect$upr <- (newdata_mean_effect$upr)^2
+newdata_mean_effect$lwr <- (newdata_mean_effect$lwr)^2
+
+mean_effect <- ggplot(invert_proxy_FD, aes(x = FDis_effect, y = mean_abund)) + 
+  geom_point(colour="black", size=0.4) +
+  #geom_ribbon( aes(ymin = lwr, ymax = upr), fill="black", alpha = .15) +
+  #geom_line(aes(y = fit), size = 0.4, color="black") +
+  labs(y="Mean abundance", x=expression("F"[DIS]*" effect traits")) + 
+  theme_classic() +
+  theme(text = element_text(size=7))
+mean_effect
+
+mean_response <- ggplot(invert_proxy_FD, aes(x = FDis_response, y = mean_abund)) + 
+  geom_point(colour="black", size=0.4) +
+  #stat_smooth(method = "lm", col = "black") +
+  labs(y="Mean abundance", x=expression("F"[DIS]*" response traits")) + 
+  theme_classic() +
+  theme(text = element_text(size=7))
+mean_response
+
+r2_predict <- predict(mean_FD10,interval="confidence")
+newdata_mean_all <- cbind(data.frame(invert_proxy_FD), data.frame(r2_predict))
+
+newdata_mean_all$fit <- (newdata_mean_all$fit)^2
+newdata_mean_all$upr <- (newdata_mean_all$upr)^2
+newdata_mean_all$lwr <- (newdata_mean_all$lwr)^2
+
+mean_all <- ggplot(invert_proxy_FD, aes(x = FDis_all, y = mean_abund)) + 
+  geom_point(colour="black", size=0.4) +
+  #geom_ribbon( aes(ymin = lwr, ymax = upr), fill="black", alpha = .15) +
+  #geom_line(aes(y = fit), size = 0.4, color="black") +
+  labs(y="Mean abundance", x=expression("F"[DIS]*" all traits")) + 
+  theme_classic() +
+  theme(text = element_text(size=7))
+mean_all
+
+grid.arrange(mean_effect, mean_response, mean_all, nrow=1)
 
 
-##########################################################
-######## REPEAT ANALYSIS ON SUBSET OF SPECIES ############
-##########################################################
+r2_predict <- predict(stability_FD6,interval="confidence")
+newdata_stab_effect <- cbind(data.frame(invert_proxy_FD), data.frame(r2_predict))
 
-rm(list=ls()) # clear R
+newdata_stab_effect$fit <- (newdata_stab_effect$fit)^2
+newdata_stab_effect$upr <- (newdata_stab_effect$upr)^2
+newdata_stab_effect$lwr <- (newdata_stab_effect$lwr)^2
 
-## read in data
-effect_42 <- read.csv("../Data/Analysis_data/Pest control/Effect_42spp_final.csv", header=TRUE)
-response_42 <- read.csv("../Data/Analysis_data/Pest control/Response_42spp_final.csv", header=TRUE)
-effect_both_42 <- read.csv("../Data/Analysis_data/Pest control/Effect_both_42spp_final.csv", header=TRUE)
-response_both_42 <- read.csv("../Data/Analysis_data/Pest control/Response_both_42spp_final.csv", header=TRUE)
+stability_effect <- ggplot(newdata_stab_effect, aes(x = FDis_effect, y = stability)) + 
+  geom_point(colour="black", size=0.4) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr), fill="black", alpha = .15) +
+  geom_line(aes(y = fit), size = 0.4, color="black") +
+  labs(y="Stability of abundance", x=expression("F"[DIS]*" effect traits")) + 
+  theme_classic() +
+  theme(text = element_text(size=7))
+stability_effect
 
-## keep only gridref, FD, FDis, mean and stability from each dataset
-effect_42 <- effect_42[,c(1,2,4,7:8)]
-response_42 <- response_42[,c(1,2,4,7:8)]
-effect_both_42 <- effect_both_42[,c(1,2,4,7:8)]
-response_both_42 <- response_both_42[,c(1,2,4,7:8)]
+r2_predict <- predict(stability_FD8,interval="confidence")
+newdata_stab_response <- cbind(data.frame(invert_proxy_FD), data.frame(r2_predict))
 
-#######################################################
-#### Hypothesis 1: effect trait diversity correlates with mean function, not stability
-str(effect_42)
-hist(effect_42$mean) ## right skew
-effect_42$mean_log <- log(effect_42$mean)
-hist(effect_42$mean_log) ## much better
-hist(effect_42$stability) ## looks good
+newdata_stab_response$fit <- (newdata_stab_response$fit)^2
+newdata_stab_response$upr <- (newdata_stab_response$upr)^2
+newdata_stab_response$lwr <- (newdata_stab_response$lwr)^2
 
-## run models
-mean_FD <- lm(mean_log ~ FD + FDis, data=effect_42)
-summary(mean_FD) ## non-significant
+stability_response <- ggplot(newdata_stab_response, aes(x = FDis_response, y = stability)) + 
+  geom_point(colour="black", size=0.4) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr), fill="black", alpha = .15) +
+  geom_line(aes(y = fit), size = 0.4, color="black") +
+  labs(y="Stability of abundance", x=expression("F"[DIS]*" response traits")) + 
+  theme_classic() +
+  theme(text = element_text(size=7))
+stability_response
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD))
-par(mfrow=c(2,2))
-plot(mean_FD) 
+r2_predict <- predict(stability_FD10,interval="confidence")
+newdata_stab_all <- cbind(data.frame(invert_proxy_FD), data.frame(r2_predict))
 
-stability_FD <- lm(stability ~ FD + FDis, data=effect_42)
-summary(stability_FD) ## stability has negative relationship with FD 
+newdata_stab_all$fit <- (newdata_stab_all$fit)^2
+newdata_stab_all$upr <- (newdata_stab_all$upr)^2
+newdata_stab_all$lwr <- (newdata_stab_all$lwr)^2
 
-par(mfrow=c(1,1))
-hist(residuals(stability_FD))
-par(mfrow=c(2,2))
-plot(stability_FD) 
-par(mfrow=c(1,1))
+stability_all <- ggplot(newdata_stab_all, aes(x = FDis_all, y = stability)) + 
+  geom_point(colour="black", size=0.4) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr), fill="black", alpha = .15) +
+  geom_line(aes(y = fit), size = 0.4, color="black") +
+  labs(y="Stability of abundance", x=expression("F"[DIS]*" all traits")) + 
+  theme_classic() +
+  theme(text = element_text(size=7))
+stability_all
 
-#######################################################
-#### Hypothesis 2: response trait diversity correlates with stability of function, not mean
-str(response_42)
-hist(response_42$mean) ## right skew
-response_42$mean_log <- log(response_42$mean)
-hist(response_42$mean_log) ## much better
-hist(response_42$stability) ## good
+grid.arrange(stability_effect, stability_response, stability_all, nrow=1)
 
-## run models
-mean_FD2 <- lm(mean_log ~ FD + FDis, data=response_42)
-summary(mean_FD2) ## non-significant
+## save all 6 plots as figure 2
+fig2 <- plot_grid(mean_effect, mean_all, mean_response, stability_effect, stability_all, stability_response, 
+          labels=c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)"), label_size=8, ncol = 3, nrow = 2, 
+          vjust =c(1,1,1,1,1,1), hjust=0)
 
-par(mfrow=c(1,1))
-hist(residuals(mean_FD2))
-par(mfrow=c(2,2))
-plot(mean_FD2) 
+ggsave(file="../Graphs/Figure2_invert_det2.png", fig2, width = 120, height = 80, dpi = 600, units = "mm", device='png') 
 
-stability_FD2 <- lm(stability ~ FD + FDis, data=response_42)
-summary(stability_FD2) ## Non-significant
-
-par(mfrow=c(1,1))
-hist(residuals(stability_FD2))
-par(mfrow=c(2,2))
-plot(stability_FD2) 
-par(mfrow=c(1,1))
-
-#######################################################
-#### Hypothesis 3: effect and both trait diversity correlates more strongly with mean compared to stability
-str(effect_both_42)
-hist(effect_both_42$mean) ## right skew
-effect_both_42$mean_log <- log(effect_both_42$mean)
-hist(effect_both_42$mean_log) ## much better
-hist(effect_both_42$stability) ## slight right skew
-effect_both_42$stability_log <- log(effect_both_42$stability)
-hist(effect_both_42$stability_log) ## better
-
-## run models
-mean_FD3 <- lm(mean_log ~ FD + FDis, data=effect_both_42)
-summary(mean_FD3) ## non-significant (FDis negative p=0.06)
-
-par(mfrow=c(1,1))
-hist(residuals(mean_FD3))
-par(mfrow=c(2,2))
-plot(mean_FD3) 
-
-stability_FD3 <- lm(stability_log ~ FD + FDis, data=effect_both_42)
-summary(stability_FD3) ## Non-significant 
-
-par(mfrow=c(1,1))
-hist(residuals(stability_FD3))
-par(mfrow=c(2,2))
-plot(stability_FD3) 
-par(mfrow=c(1,1))
-
-#######################################################
-#### Hypothesis 4: response and both trait diversity correlates more strongly with stability compared to mean
-str(response_both_42)
-hist(response_both_42$mean) ## right skew
-response_both_42$mean_log <- log(response_both_42$mean)
-hist(response_both_42$mean_log) ## much better
-hist(response_both_42$stability) ## good
-
-## run models
-mean_FD4 <- lm(mean_log ~ FD + FDis, data=response_both_42)
-summary(mean_FD4) ## non-significant
-
-par(mfrow=c(1,1))
-hist(residuals(mean_FD4))
-par(mfrow=c(2,2))
-plot(mean_FD4) 
-
-stability_FD4 <- lm(stability ~ FD + FDis, data=response_both_42)
-summary(stability_FD4) ## non-significant
-
-par(mfrow=c(1,1))
-hist(residuals(mean_FD4))
-par(mfrow=c(2,2))
-plot(mean_FD4) 
+bes2 <- plot_grid(mean_effect, mean_all, mean_response, stability_effect, stability_all, stability_response, ncol = 3, nrow = 2)
+ggsave(file="../Graphs/BES_invert.png", bes2, height=7, width=10) 
