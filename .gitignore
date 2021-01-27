@@ -1,7 +1,7 @@
 .Rproj.user
-.Rhistory
+*.Rhistory
 -SALP7013.Rhistory
-.RData
+*.RData
 .Ruserdata
 .RDataTmp
 .Rproj
