@@ -17,13 +17,12 @@ library(zoo)
 
 ## read in trait data 
 seed_traits <- read.csv("../Data/Trait data/Seed dispersal/BBS_seed_trait_data.csv", header=TRUE) ## 48 species
-#BBS_data <- read.csv("../Data/BBS_abund_data/BBS_2004_2018_seed_det_comp.csv", header=TRUE) ## 45 species + 130 sites
-BBS_data <- read.csv("../Data/BBS_abund_data/BBS_2004_2018_seed_det_interpol.csv", header=TRUE) ## 48 species + 200 sites
+BBS_data <- read.csv("../Data/BBS_abund_data/BBS_2004_2018_seed_det_comp.csv", header=TRUE) ## 45 species + 130 sites
+#BBS_data <- read.csv("../Data/BBS_abund_data/BBS_2004_2018_seed_det_interpol.csv", header=TRUE) ## 48 species + 200 sites
 
 ## remove species from seed_traits which are not in BBS complete case data (3 species)
-species <- as.data.frame(unique(BBS_data$ENGLISH_NAME))
-colnames(species)[1] <- "ENGLISH_NAME"
-seed_traits <- merge(seed_traits, species, by="ENGLISH_NAME", all.y=TRUE)
+species <- unique(BBS_data$ENGLISH_NAME)
+seed_traits <- seed_traits[seed_traits$ENGLISH_NAME %in% species, ]
 ## only do this for complete case data!
 
 ## Effect traits:
@@ -242,13 +241,13 @@ write.csv(FD_multi_response, file="../Data/Analysis_data/Seed dispersal/FD_multi
 ####################### ALL TRAITS ##############################
 #################################################################
 
-seed_all <- seed_traits[,-c(2:4)]
+seed_all <- seed_traits[,-c(2:4,14)]
 ## centre and scale trait data
-seed_all[c(2:18)] <- lapply(seed_all[c(2:18)], function(seed_all) c(scale(seed_all, center = TRUE, scale = TRUE))) 
+seed_all[c(2:17)] <- lapply(seed_all[c(2:17)], function(seed_all) c(scale(seed_all, center = TRUE, scale = TRUE))) 
 
 #############################################################################################
 ## High correlation between traits so run PCA on all effect traits
-pca_all <- prcomp(seed_all[ ,2:18]) ## all 17 traits
+pca_all <- prcomp(seed_all[ ,2:17]) ## all 17 traits
 summary(pca_all) ## First 5 axes explain 85% of total variation
 
 all_eigen <- get_eigenvalue(pca_all)
