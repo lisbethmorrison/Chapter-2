@@ -282,20 +282,18 @@ write.csv(FD_multi_all, file="../Data/Analysis_data/Pest control/FD_multi_invert
 ###########################
 ## correlation between FDis effect and FDis response
 
-FDis_effect <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_effect_det2.csv", header=TRUE)
-FDis_response <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_response_det2.csv", header=TRUE)
+FDis_effect <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_effect_det_interpol.csv", header=TRUE)
+FDis_response <- read.csv("../Data/Analysis_data/Pest control/FD_multi_invert_response_det_interpol.csv", header=TRUE)
 
-FDis_effect <- FDis_effect[,-c(2,4:5)]
-FDis_response <- FDis_response[,-c(2,4:5)]
 colnames(FDis_effect)[2] <- "FDis_effect" 
 colnames(FDis_response)[2] <- "FDis_response" 
 FDis_invert <- merge(FDis_effect, FDis_response, by="GRIDREF")
 
-cor.test(FDis_invert$FDis_effect, FDis_invert$FDis_response) ## p=0.07, r = -0.13
+cor.test(FDis_invert$FDis_effect, FDis_invert$FDis_response) ## p=0.08, r = -0.12
 
 ## compare this to random sample of communities
 ## find species richness for each site and each year
-BBS_info <- BBS_data[,c(1,2,4)]
+BBS_info <- BBS_data[,c(1:3)]
 BBS_info <- unique(BBS_info)
 BBS_spp_richness2 <- BBS_info %>% group_by(GRIDREF, YEAR) %>% summarise(no_spp = n()) ## number of species at each site each year
 BBS_spp_richness <- BBS_spp_richness2 %>% group_by(GRIDREF) %>% summarise(spp_rich = mean(no_spp)) ## average spp richness over time (same for each year)
@@ -339,7 +337,7 @@ for (i in 1:100){
   ## remove first column (which is actual gridrefs) and leave sites as numbers 1-200
   BBS_sample <- BBS_sample[,-(1)]
   
-  FD_multi_response <- dbFD(invert_response, BBS_sample)
+  FD_multi_response <- dbFD(invert_response, BBS_sample, calc.FRic = FALSE, calc.FDiv = FALSE)
   FD_multi_response <- data.frame(GRIDREF=site_match$gridref, FDis=FD_multi_response$FDis, i)
   FDis_response_sample <- rbind(FDis_response_sample, FD_multi_response)
   
@@ -347,7 +345,7 @@ for (i in 1:100){
 
 colnames(FDis_response_sample)[2] <- "FDis_response"
 ## save file 
-write.csv(FDis_response_sample, file="../Data/Analysis_data/Pest control/FDis_response_sample_det2.csv", row.names=FALSE)
+write.csv(FDis_response_sample, file="../Data/Analysis_data/Pest control/FDis_response_sample_det_interpol.csv", row.names=FALSE)
 
 ############################ EFFECT FDis #################################
 FDis_effect_sample <- NULL
@@ -365,13 +363,13 @@ for (i in 1:100){
   ## remove first column (which is actual gridrefs) and leave sites as numbers 1-200
   BBS_sample <- BBS_sample[,-(1)]
   
-  FD_multi_effect <- dbFD(invert_effect, BBS_sample)
+  FD_multi_effect <- dbFD(invert_effect, BBS_sample, calc.FRic = FALSE, calc.FDiv = FALSE)
   FD_multi_effect <- data.frame(GRIDREF=site_match$gridref, FDis=FD_multi_effect$FDis, i)
   FDis_effect_sample <- rbind(FDis_effect_sample, FD_multi_effect)
   
 }
 colnames(FDis_effect_sample)[2] <- "FDis_effect"
-write.csv(FDis_effect_sample, file="../Data/Analysis_data/Pest control/FDis_effect_sample_det2.csv", row.names=FALSE)
+write.csv(FDis_effect_sample, file="../Data/Analysis_data/Pest control/FDis_effect_sample_det_interpol.csv", row.names=FALSE)
 
 FDis_effect_sample <- read.csv("../Data/Analysis_data/Pest control/FDis_effect_sample_det2.csv", header=TRUE)
 FDis_response_sample <- read.csv("../Data/Analysis_data/Pest control/FDis_response_sample_det2.csv", header=TRUE)

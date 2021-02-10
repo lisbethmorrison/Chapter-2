@@ -287,20 +287,18 @@ write.csv(FD_multi_all, file="../Data/Analysis_data/Seed dispersal/FD_multi_seed
 ###########################
 ## correlation between FDis effect and FDis response
 
-FDis_effect <- read.csv("../Data/Analysis_data/Seed dispersal/FD_multi_seed_effect_det2.csv", header=TRUE)
-FDis_response <- read.csv("../Data/Analysis_data/Seed dispersal/FD_multi_seed_response_det2.csv", header=TRUE)
+FDis_effect <- read.csv("../Data/Analysis_data/Seed dispersal/FD_multi_seed_effect_det_interpol.csv", header=TRUE)
+FDis_response <- read.csv("../Data/Analysis_data/Seed dispersal/FD_multi_seed_response_det_interpol.csv", header=TRUE)
 
-FDis_effect <- FDis_effect[,-c(2,4:5)]
-FDis_response <- FDis_response[,-c(2,4:5)]
 colnames(FDis_effect)[2] <- "FDis_effect" 
 colnames(FDis_response)[2] <- "FDis_response" 
 FDis_seed <- merge(FDis_effect, FDis_response, by="GRIDREF")
 
-cor.test(FDis_seed$FDis_effect, FDis_seed$FDis_response) ## p<0.001, r = -0.33
+cor.test(FDis_seed$FDis_effect, FDis_seed$FDis_response) ## p<0.001, r = -0.29
 
 ## compare this to random sample of communities
 ## find species richness for each site and each year
-BBS_info <- BBS_data[,c(1,2,4)]
+BBS_info <- BBS_data[,c(1,2,3)]
 BBS_info <- unique(BBS_info)
 BBS_spp_richness2 <- BBS_info %>% group_by(GRIDREF, YEAR) %>% summarise(no_spp = n()) ## number of species at each site each year
 BBS_spp_richness <- BBS_spp_richness2 %>% group_by(GRIDREF) %>% summarise(spp_rich = mean(no_spp)) ## average spp richness over time (same for each year)
@@ -339,8 +337,8 @@ for (i in 1:100){
     group_by(gridref, sample.ENGLISH_NAME) %>% 
     spread(sample.ENGLISH_NAME, sample.mean_abund, drop = FALSE, fill = 0)
   site_match <- BBS_sample[,(1)]
-  ## add in numbers 1:199
-  site_match$site <- 1:180
+  ## add in numbers 1:200
+  site_match$site <- 1:200
   ## remove first column (which is actual gridrefs) and leave sites as numbers 1-200
   BBS_sample <- BBS_sample[,-(1)]
   
@@ -351,10 +349,8 @@ for (i in 1:100){
 }
 
 colnames(FDis_response_sample)[2] <- "FDis_response"
-## remove site SU4051 where species richness == 1 so FD cannot be calculated 
-FDis_response_sample <- FDis_response_sample[!(FDis_response_sample$GRIDREF=="SU0451"),] ## 199 sites now
 ## save file 
-write.csv(FDis_response_sample, file="../Data/Analysis_data/Seed dispersal/FDis_response_sample_det1.csv", row.names=FALSE)
+write.csv(FDis_response_sample, file="../Data/Analysis_data/Seed dispersal/FDis_response_sample_det_interpol.csv", row.names=FALSE)
 
 ############################ EFFECT FDis #################################
 FDis_effect_sample <- NULL
@@ -368,7 +364,7 @@ for (i in 1:100){
     spread(sample.ENGLISH_NAME, sample.mean_abund, drop = FALSE, fill = 0)
   site_match <- BBS_sample[,(1)]
   ## add in numbers 1:199
-  site_match$site <- 1:180
+  site_match$site <- 1:200
   ## remove first column (which is actual gridrefs) and leave sites as numbers 1-200
   BBS_sample <- BBS_sample[,-(1)]
   
@@ -378,12 +374,10 @@ for (i in 1:100){
   
 }
 colnames(FDis_effect_sample)[2] <- "FDis_effect"
-## remove site SU4051 where species richness == 1 so FD cannot be calculated 
-FDis_effect_sample <- FDis_effect_sample[!(FDis_effect_sample$GRIDREF=="SU0451"),] ## 199 sites now
-write.csv(FDis_effect_sample, file="../Data/Analysis_data/Seed dispersal/FDis_effect_sample_det1.csv", row.names=FALSE)
+write.csv(FDis_effect_sample, file="../Data/Analysis_data/Seed dispersal/FDis_effect_sample_det_interpol.csv", row.names=FALSE)
 
-FDis_effect_sample <- read.csv("../Data/Analysis_data/Seed dispersal/FDis_effect_sample_det2.csv", header=TRUE)
-FDis_response_sample <- read.csv("../Data/Analysis_data/Seed dispersal/FDis_response_sample_det2.csv", header=TRUE)
+FDis_effect_sample <- read.csv("../Data/Analysis_data/Seed dispersal/FDis_effect_sample_det_interpol.csv", header=TRUE)
+FDis_response_sample <- read.csv("../Data/Analysis_data/Seed dispersal/FDis_response_sample_det_interpol.csv", header=TRUE)
 
 FDis_effect$i <- 0
 FDis_response$i <- 0
@@ -399,7 +393,7 @@ FDis_seed_cor <- FDis_seed_sample %>%
 ## take out true correlation(r=-0.34)
 FDis_seed_cor2 <- FDis_seed_cor[!(FDis_seed_cor$i==0),]
 mean_fake_cor <- mean(FDis_seed_cor2$COR)
-mean_fake_cor ## -0.06
+mean_fake_cor ## -0.19
 
 ## plot true vs simulated correlations
 true <- filter(FDis_seed_sample, i==0)
@@ -419,7 +413,7 @@ seed_cor <- ggplot(sim, aes(x=FDis_effect, y=FDis_response, group=i)) +
   theme_classic() +
   theme(text = element_text(size = 6), legend.position="none")
 seed_cor
-ggsave(filename="../Graphs/seed_FDis_correlation_det1.png", plot=seed_cor, width = 150, 
+ggsave(filename="../Graphs/seed_FDis_correlation_det_interpol.png", plot=seed_cor, width = 150, 
        height = 100, dpi = 600, units = "mm", device='png')
 
 
