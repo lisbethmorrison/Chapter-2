@@ -371,8 +371,8 @@ for (i in 1:100){
 colnames(FDis_effect_sample)[2] <- "FDis_effect"
 write.csv(FDis_effect_sample, file="../Data/Analysis_data/Pest control/FDis_effect_sample_det_interpol.csv", row.names=FALSE)
 
-FDis_effect_sample <- read.csv("../Data/Analysis_data/Pest control/FDis_effect_sample_det2.csv", header=TRUE)
-FDis_response_sample <- read.csv("../Data/Analysis_data/Pest control/FDis_response_sample_det2.csv", header=TRUE)
+FDis_effect_sample <- read.csv("../Data/Analysis_data/Pest control/FDis_effect_sample_det_interpol.csv", header=TRUE)
+FDis_response_sample <- read.csv("../Data/Analysis_data/Pest control/FDis_response_sample_det_interpol.csv", header=TRUE)
 
 FDis_effect$i <- 0
 FDis_response$i <- 0
@@ -391,7 +391,7 @@ FDis_invert_cor <- FDis_invert_sample %>%
 ## take out true correlation(r=-0.12)
 FDis_invert_cor2 <- FDis_invert_cor[!(FDis_invert_cor$i==0),]
 mean_fake_cor <- mean(FDis_invert_cor2$COR)
-mean_fake_cor ## 0.34
+mean_fake_cor ## -0.08
 
 true <- filter(FDis_invert_sample, i==0)
 sim <- FDis_invert_sample[!(FDis_invert_sample$i==0),]
@@ -410,12 +410,12 @@ invert_cor <- ggplot(sim, aes(x=FDis_effect, y=FDis_response, group=i)) +
   theme_classic() +
   theme(text = element_text(size = 6), legend.position="none")
 invert_cor
-ggsave(filename="../Graphs/invert_FDis_correlation_det2.png", plot=invert_cor, width=10, height=6)
+ggsave(filename="../Graphs/invert_FDis_correlation_det_interpol.png", plot=invert_cor, width=10, height=6)
 
 ## plot both seed and invert together
 library(cowplot)
 fig3 <- plot_grid(seed_cor, invert_cor, labels=c("(a)", "(b)"), label_size=6, ncol = 2, nrow = 1, hjust=0)
 fig3
-ggsave(filename="../Graphs/fig3_det2.png", plot=fig3, width = 80, 
+ggsave(filename="../Graphs/fig3_det_interpol.png", plot=fig3, width = 80, 
        height = 40, dpi = 600, units = "mm", device='png')
 
